@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fff6f5;
+    --foreground: #1a1414;
+    --card: #f5eceb;
+    --card-foreground: #16100f;
+    --popover: #f2e9e8;
+    --popover-foreground: #1f1918;
+    --primary: #d40c1a;
+    --primary-foreground: #faf9f1;
+    --secondary: #006db4;
+    --secondary-foreground: #faf9f1;
+    --muted: #e8dfde;
+    --muted-foreground: #484040;
+    --accent: #eac8c0;
+    --accent-foreground: #16100f;
+    --destructive: #db0000;
+    --border: #d1c8c7;
+    --input: #c4bbba;
+    --ring: #0f68a2;
+    --chart-1: #e3121e;
+    --chart-2: #0784ea;
+    --chart-3: #d19b00;
+    --chart-4: #51ad57;
+    --chart-5: #c494fa;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: #090504;
+    --foreground: #f5eceb;
+    --card: #16100f;
+    --card-foreground: #f5eceb;
+    --popover: #16100f;
+    --popover-foreground: #f5eceb;
+    --primary: #fd3a37;
+    --primary-foreground: #faf9f1;
+    --secondary: #0066ae;
+    --secondary-foreground: #faf9f1;
+    --muted: #1a1414;
+    --muted-foreground: #a59c9b;
+    --accent: #a4730b;
+    --accent-foreground: #f5eceb;
+    --destructive: #db0000;
+    --border: #484040;
+    --input: #484040;
+    --ring: #0362ac;
+    --chart-1: #ff1e28;
+    --chart-2: #0095ff;
+    --chart-3: #e3af00;
+    --chart-4: #54b05a;
+    --chart-5: #c494fa;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+/* Iniciar em dark mode por padrão */
+html {
+  @apply dark;
+}
+
+/* React Flow customization */
+.react-flow__node {
+  font-size: 12px;
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
