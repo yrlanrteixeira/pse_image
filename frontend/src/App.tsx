@@ -218,6 +218,7 @@ function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          deleteKeyCode={['Delete', 'Backspace']}
           fitView
           defaultEdgeOptions={{
             animated: true,
