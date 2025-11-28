@@ -205,7 +205,7 @@ function App() {
 
           <Button onClick={clearWorkspace} size="sm" variant="destructive">
             <Trash2 className="w-4 h-4 mr-1" />
-            Limpar
+            Limpar tudo
           </Button>
 
           <ThemeToggle />

@@ -89,7 +89,7 @@ export default function PointOpNode({ data, id, selected }: NodeProps<PointOpNod
 
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
         <Sparkles className="w-4 h-4 text-orange-500" />
-        <h3 className="font-bold text-sm text-orange-500">Operação Pontual</h3>
+        <h3 className="font-bold text-sm text-orange-500">Operações Morfólogica</h3>
       </div>
 
       <div className="space-y-3 text-xs">
