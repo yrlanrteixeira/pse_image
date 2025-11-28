@@ -88,6 +88,72 @@ html {
   stroke-width: 2;
 }
 
+/* React Flow Controls light mode */
+.react-flow__controls {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.react-flow__controls-button {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.react-flow__controls-button:hover {
+  background: hsl(var(--accent));
+}
+
+/* React Flow MiniMap light mode */
+.react-flow__minimap {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+/* React Flow Background */
+.react-flow__background {
+  background: hsl(var(--background));
+}
+
+.react-flow__background-pattern {
+  stroke: hsl(var(--border));
+}
+
+/* React Flow Controls dark mode */
+.dark .react-flow__controls {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.dark .react-flow__controls-button {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.dark .react-flow__controls-button:hover {
+  background: hsl(var(--accent));
+}
+
+/* React Flow MiniMap dark mode */
+.dark .react-flow__minimap {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.dark .react-flow__minimap-mask {
+  fill: hsl(var(--background) / 0.7);
+}
+
+/* React Flow Background dark mode */
+.dark .react-flow__background {
+  background: hsl(var(--background));
+}
+
+.dark .react-flow__background-pattern {
+  stroke: hsl(var(--border));
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

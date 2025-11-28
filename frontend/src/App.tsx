@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   Upload,
   Grid3x3,
@@ -206,6 +207,8 @@ function App() {
             <Trash2 className="w-4 h-4 mr-1" />
             Limpar
           </Button>
+
+          <ThemeToggle />
         </div>
       </div>
 
