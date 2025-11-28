@@ -1,11 +1,12 @@
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useState } from 'react'
-import { Upload, FileText } from 'lucide-react'
+import { Upload, FileText, Image as ImageIcon } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { RawReaderNodeData } from '@/types'
 import { cn } from '@/lib/utils'
+import { uploadRawFile } from '@/lib/api'
 
 export default function RawReaderNode({ data, id, selected }: NodeProps<RawReaderNodeData>) {
   const [width, setWidth] = useState(data.width || 512)
@@ -18,30 +19,57 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
 
     setLoading(true)
     try {
-      const arrayBuffer = await file.arrayBuffer()
-      const uint8Array = new Uint8Array(arrayBuffer)
-      const imageData = Array.from(uint8Array)
+      const filename = file.name.toLowerCase()
+      const isRawFile = filename.endsWith('.raw')
 
-      // Validar dimensões
-      if (width * height !== imageData.length) {
-        alert(
-          `Dimensões inválidas!\n` +
-          `Esperado: ${width}×${height} = ${width * height} bytes\n` +
-          `Arquivo: ${imageData.length} bytes`
-        )
-        return
+      if (isRawFile) {
+        // Arquivo RAW: processar localmente (comportamento original)
+        const arrayBuffer = await file.arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const imageData = Array.from(uint8Array)
+
+        // Validar dimensões
+        if (width * height !== imageData.length) {
+          alert(
+            `Dimensões inválidas!\n` +
+            `Esperado: ${width}×${height} = ${width * height} bytes\n` +
+            `Arquivo: ${imageData.length} bytes`
+          )
+          return
+        }
+
+        data.onChange?.(id, {
+          ...data,
+          imageData,
+          width,
+          height,
+          filename: file.name,
+        })
+      } else {
+        // Formato de imagem comum: enviar ao backend para conversão
+        try {
+          const result = await uploadRawFile(file)
+
+          // Backend retorna automaticamente as dimensões e dados convertidos
+          setWidth(result.width)
+          setHeight(result.height)
+
+          data.onChange?.(id, {
+            ...data,
+            imageData: result.data,
+            width: result.width,
+            height: result.height,
+            filename: file.name,
+          })
+        } catch (error) {
+          console.error('Erro ao converter imagem:', error)
+          alert(error instanceof Error ? error.message : 'Erro ao converter imagem')
+          return
+        }
       }
-
-      data.onChange?.(id, {
-        ...data,
-        imageData,
-        width,
-        height,
-        filename: file.name,
-      })
     } catch (error) {
       console.error('Erro ao ler arquivo:', error)
-      alert('Erro ao ler arquivo RAW')
+      alert('Erro ao processar arquivo')
     } finally {
       setLoading(false)
     }
@@ -67,8 +95,8 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
       />
 
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
-        <Upload className="w-4 h-4 text-green-500" />
-        <h3 className="font-bold text-sm text-green-500">Leitura RAW</h3>
+        <ImageIcon className="w-4 h-4 text-green-500" />
+        <h3 className="font-bold text-sm text-green-500">Leitura de Imagem</h3>
       </div>
 
       <div className="space-y-3 text-xs">
@@ -103,16 +131,19 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
 
         <div>
           <Label htmlFor={`file-${id}`} className="text-xs text-muted-foreground">
-            Arquivo RAW
+            Arquivo de Imagem
           </Label>
           <Input
             id={`file-${id}`}
             type="file"
-            accept=".raw"
+            accept=".raw,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.gif,.webp"
             onChange={handleFileChange}
             className="h-8 text-xs cursor-pointer"
             disabled={loading}
           />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            RAW, JPG, PNG, BMP, TIFF, GIF, WebP
+          </p>
         </div>
 
         {data.filename && (
