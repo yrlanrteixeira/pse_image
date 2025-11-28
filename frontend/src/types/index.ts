@@ -23,7 +23,7 @@ export type NodeType =
   | 'DIFFERENCE'
   | 'SAVE'
 
-export type PointOperation = 'brightness' | 'contrast' | 'threshold' | 'negative'
+export type PointOperation = 'brightness' | 'threshold'
 
 export interface KernelPreset {
   name: string

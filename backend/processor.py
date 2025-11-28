@@ -262,19 +262,19 @@ class ImageProcessor:
             for i in range(len(pixels)):
                 output[i] = max(0, min(255, pixels[i] + brightness))
 
-        elif operation == 'contrast':
-            contrast = params.get('value', 1.0)
-            for i in range(len(pixels)):
-                output[i] = max(0, min(255, int((pixels[i] - 128) * contrast + 128)))
+        # elif operation == 'contrast':
+        #     contrast = params.get('value', 1.0)
+        #     for i in range(len(pixels)):
+        #         output[i] = max(0, min(255, int((pixels[i] - 128) * contrast + 128)))
 
         elif operation == 'threshold':
             threshold = params.get('value', 128)
             for i in range(len(pixels)):
                 output[i] = 255 if pixels[i] >= threshold else 0
 
-        elif operation == 'negative':
-            for i in range(len(pixels)):
-                output[i] = 255 - pixels[i]
+        # elif operation == 'negative':
+        #     for i in range(len(pixels)):
+        #         output[i] = 255 - pixels[i]
 
         return {
             "type": "image",
