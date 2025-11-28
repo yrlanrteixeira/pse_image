@@ -180,6 +180,85 @@ export const PRESET_KERNELS: Record<string, KernelPreset> = {
     kernel: [[0, -1, 0], [-1, 4, -1], [0, -1, 0]],
     divisor: 1,
   },
+  // ============ FILTROS DESABILITADOS (Para referência) ============
+  // average5x5: {
+  //   name: 'Média 5x5',
+  //   size: 5,
+  //   kernel: [
+  //     [1, 1, 1, 1, 1],
+  //     [1, 1, 1, 1, 1],
+  //     [1, 1, 1, 1, 1],
+  //     [1, 1, 1, 1, 1],
+  //     [1, 1, 1, 1, 1],
+  //   ],
+  //   divisor: 25,
+  // },
+  // gaussian: {
+  //   name: 'Gaussiano 3x3',
+  //   size: 3,
+  //   kernel: [[1, 2, 1], [2, 4, 2], [1, 2, 1]],
+  //   divisor: 16,
+  // },
+  // gaussian5x5: {
+  //   name: 'Gaussiano 5x5',
+  //   size: 5,
+  //   kernel: [
+  //     [1, 4, 6, 4, 1],
+  //     [4, 16, 24, 16, 4],
+  //     [6, 24, 36, 24, 6],
+  //     [4, 16, 24, 16, 4],
+  //     [1, 4, 6, 4, 1],
+  //   ],
+  //   divisor: 256,
+  // },
+  // laplacian8: {
+  //   name: 'Laplaciano 8-vizinhos',
+  //   size: 3,
+  //   kernel: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]],
+  //   divisor: 1,
+  // },
+  // sharpen: {
+  //   name: 'Nitidez',
+  //   size: 3,
+  //   kernel: [[0, -1, 0], [-1, 5, -1], [0, -1, 0]],
+  //   divisor: 1,
+  // },
+  // edgeDetect: {
+  //   name: 'Detecção Bordas',
+  //   size: 3,
+  //   kernel: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]],
+  //   divisor: 1,
+  // },
+  // emboss: {
+  //   name: 'Relevo',
+  //   size: 3,
+  //   kernel: [[-2, -1, 0], [-1, 1, 1], [0, 1, 2]],
+  //   divisor: 1,
+  // },
+  // sobelX: {
+  //   name: 'Sobel X (Horizontal)',
+  //   size: 3,
+  //   kernel: [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+  //   divisor: 1,
+  // },
+  // sobelY: {
+  //   name: 'Sobel Y (Vertical)',
+  //   size: 3,
+  //   kernel: [[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+  //   divisor: 1,
+  // },
+  // prewittX: {
+  //   name: 'Prewitt X (Horizontal)',
+  //   size: 3,
+  //   kernel: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]],
+  //   divisor: 1,
+  // },
+  // prewittY: {
+  //   name: 'Prewitt Y (Vertical)',
+  //   size: 3,
+  //   kernel: [[-1, -1, -1], [0, 0, 0], [1, 1, 1]],
+  //   divisor: 1,
+  // },
 }
 
 // ============ NODE COLORS ============
