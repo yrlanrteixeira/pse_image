@@ -20,28 +20,33 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
     canvas.width = width
     canvas.height = height
 
-    // Limpar
-    ctx.fillStyle = 'hsl(var(--secondary))'
+    // Detectar tema (dark ou light)
+    const isDark = document.documentElement.classList.contains('dark')
+
+    // Limpar com cor de fundo apropriada
+    ctx.fillStyle = isDark ? '#0f172a' : '#ffffff'  // slate-900 / white
     ctx.fillRect(0, 0, width, height)
 
-    // Encontrar máximo para normalização
-    const maxCount = Math.max(...data.histogram, 1)
-
-    // Desenhar barras
-    ctx.fillStyle = 'hsl(var(--primary))'
-    for (let i = 0; i < 256; i++) {
-      const barHeight = (data.histogram[i] / maxCount) * (height - 10)
-      ctx.fillRect(i, height - barHeight, 1, barHeight)
-    }
-
-    // Grid
-    ctx.strokeStyle = 'hsl(var(--border))'
+    // Grid horizontal ANTES das barras
+    ctx.strokeStyle = isDark ? '#334155' : '#e2e8f0'  // slate-700 / slate-200
     ctx.lineWidth = 1
-    for (let i = 0; i < height; i += 30) {
+    for (let i = 30; i < height; i += 30) {
       ctx.beginPath()
       ctx.moveTo(0, i)
       ctx.lineTo(width, i)
       ctx.stroke()
+    }
+
+    // Encontrar máximo para normalização
+    const maxCount = Math.max(...data.histogram, 1)
+
+    // Desenhar barras com cor rosa/pink vibrante
+    ctx.fillStyle = isDark ? '#f472b6' : '#ec4899'  // pink-400 / pink-500
+    for (let i = 0; i < 256; i++) {
+      const barHeight = (data.histogram[i] / maxCount) * (height - 10)
+      if (barHeight > 0) {
+        ctx.fillRect(i, height - barHeight, 1, barHeight)
+      }
     }
   }, [data.histogram])
 
