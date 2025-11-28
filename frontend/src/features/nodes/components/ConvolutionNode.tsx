@@ -11,28 +11,69 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { ConvolutionNodeData } from '@/types'
-import { PRESET_KERNELS } from '@/types'
+import { PRESET_KERNELS, generateAverageKernel, generateLaplacianKernel } from '@/types'
 import { cn } from '@/lib/utils'
+
+const KERNEL_SIZES = [3, 5, 7, 9]
 
 export default function ConvolutionNode({ data, id, selected }: NodeProps<ConvolutionNodeData>) {
   const [preset, setPreset] = useState(data.preset || 'average')
   const [kernelSize, setKernelSize] = useState(data.kernelSize || 3)
   const [kernel, setKernel] = useState(data.kernel || PRESET_KERNELS.average.kernel)
   const [divisor, setDivisor] = useState(data.divisor || 9)
+  const [filterType, setFilterType] = useState<'convolution' | 'median'>(data.filterType || 'convolution')
 
   const handlePresetChange = (presetKey: string) => {
     setPreset(presetKey)
-    const selected = PRESET_KERNELS[presetKey]
-    setKernelSize(selected.size)
-    setKernel(selected.kernel)
-    setDivisor(selected.divisor)
+    const isMedian = presetKey === 'median'
+    const newFilterType = isMedian ? 'median' : 'convolution'
+    setFilterType(newFilterType)
+
+    let kernelData
+    if (presetKey === 'average') {
+      kernelData = generateAverageKernel(kernelSize)
+    } else if (presetKey === 'laplacian') {
+      kernelData = generateLaplacianKernel(kernelSize)
+    } else {
+      // median
+      kernelData = PRESET_KERNELS.median
+    }
+
+    setKernel(kernelData.kernel)
+    setDivisor(kernelData.divisor)
 
     data.onChange?.(id, {
       ...data,
       preset: presetKey,
-      kernelSize: selected.size,
-      kernel: selected.kernel,
-      divisor: selected.divisor,
+      kernelSize: kernelSize,
+      kernel: kernelData.kernel,
+      divisor: kernelData.divisor,
+      filterType: newFilterType,
+    })
+  }
+
+  const handleKernelSizeChange = (size: string) => {
+    const newSize = parseInt(size)
+    setKernelSize(newSize)
+
+    let kernelData
+    if (preset === 'average') {
+      kernelData = generateAverageKernel(newSize)
+    } else if (preset === 'laplacian') {
+      kernelData = generateLaplacianKernel(newSize)
+    } else {
+      // median - não precisa regenerar kernel
+      kernelData = { kernel: PRESET_KERNELS.median.kernel, divisor: 1 }
+    }
+
+    setKernel(kernelData.kernel)
+    setDivisor(kernelData.divisor)
+
+    data.onChange?.(id, {
+      ...data,
+      kernelSize: newSize,
+      kernel: kernelData.kernel,
+      divisor: kernelData.divisor,
     })
   }
 
@@ -49,6 +90,8 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
     setDivisor(newDivisor)
     data.onChange?.(id, { ...data, divisor: newDivisor })
   }
+
+  const isMedianFilter = filterType === 'median'
 
   return (
     <div
@@ -71,7 +114,7 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
       <div className="space-y-3 text-xs">
         <div>
           <Label htmlFor={`preset-${id}`} className="text-xs text-muted-foreground">
-            Máscara Predefinida
+            Tipo de Filtro
           </Label>
           <Select value={preset} onValueChange={handlePresetChange}>
             <SelectTrigger id={`preset-${id}`} className="h-8 text-xs">
@@ -88,48 +131,77 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
         </div>
 
         <div>
-          <Label className="text-xs text-muted-foreground mb-1 block">
-            Kernel {kernelSize}×{kernelSize}
+          <Label htmlFor={`size-${id}`} className="text-xs text-muted-foreground">
+            Tamanho da Máscara
           </Label>
-          <div
-            className="grid gap-1"
-            style={{
-              gridTemplateColumns: `repeat(${kernelSize}, 1fr)`,
-            }}
-          >
-            {kernel.map((row, i) =>
-              row.map((val, j) => (
-                <Input
-                  key={`${i}-${j}`}
-                  type="number"
-                  value={val}
-                  onChange={(e) => handleKernelChange(i, j, e.target.value)}
-                  disabled={preset !== 'custom'}
-                  className="h-7 text-xs text-center p-0"
-                  step="0.1"
-                />
-              ))
-            )}
+          <Select value={kernelSize.toString()} onValueChange={handleKernelSizeChange}>
+            <SelectTrigger id={`size-${id}`} className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {KERNEL_SIZES.map((size) => (
+                <SelectItem key={size} value={size.toString()} className="text-xs">
+                  {size}×{size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {!isMedianFilter && (
+          <>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Kernel {kernelSize}×{kernelSize}
+              </Label>
+              <div
+                className="grid gap-1"
+                style={{
+                  gridTemplateColumns: `repeat(${kernelSize}, 1fr)`,
+                }}
+              >
+                {kernel.map((row, i) =>
+                  row.map((val, j) => (
+                    <Input
+                      key={`${i}-${j}`}
+                      type="number"
+                      value={val}
+                      onChange={(e) => handleKernelChange(i, j, e.target.value)}
+                      className="h-7 text-xs text-center p-0"
+                      step="0.1"
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor={`divisor-${id}`} className="text-xs text-muted-foreground">
+                Divisor
+              </Label>
+              <Input
+                id={`divisor-${id}`}
+                type="number"
+                value={divisor}
+                onChange={(e) => handleDivisorChange(e.target.value)}
+                className="h-8 text-xs"
+                step="0.1"
+              />
+            </div>
+          </>
+        )}
+
+        {isMedianFilter && (
+          <div className="text-[10px] text-muted-foreground bg-secondary p-2 rounded">
+            Filtro de mediana {kernelSize}×{kernelSize} (não usa kernel)
           </div>
-        </div>
+        )}
 
-        <div>
-          <Label htmlFor={`divisor-${id}`} className="text-xs text-muted-foreground">
-            Divisor
-          </Label>
-          <Input
-            id={`divisor-${id}`}
-            type="number"
-            value={divisor}
-            onChange={(e) => handleDivisorChange(e.target.value)}
-            className="h-8 text-xs"
-            step="0.1"
-          />
-        </div>
-
-        <div className="text-[10px] text-muted-foreground bg-secondary p-2 rounded">
-          {preset === 'custom' ? 'Kernel personalizado' : PRESET_KERNELS[preset]?.name}
-        </div>
+        {!isMedianFilter && (
+          <div className="text-[10px] text-muted-foreground bg-secondary p-2 rounded">
+            {PRESET_KERNELS[preset]?.name} - Kernel editável
+          </div>
+        )}
       </div>
 
       <Handle
