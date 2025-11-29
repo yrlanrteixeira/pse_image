@@ -333,15 +333,23 @@ class ImageProcessor:
 
     def process_display(self, node: Dict, inputs: List) -> Dict:
         """
-        Prepara imagem para exibição
+        Prepara imagem para exibição e propaga dados para outros nós
         """
         if not inputs:
             return {"error": "Nenhuma entrada para exibir"}
 
-        return {
-            "type": "display",
-            "image": inputs[0]
+        # Retorna os dados da imagem no formato padrão para permitir encadeamento
+        result = {
+            "type": "image",
+            "width": inputs[0]['width'],
+            "height": inputs[0]['height'],
+            "data": inputs[0]['data']
         }
+        
+        # Debug: verificar o que está sendo retornado
+        print(f"[DEBUG] process_display retornando: type={result['type']}, width={result['width']}, height={result['height']}, data_length={len(result['data'])}")
+        
+        return result
 
     def process_save(self, node: Dict, inputs: List) -> Dict:
         """

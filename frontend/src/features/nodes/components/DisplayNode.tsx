@@ -7,7 +7,12 @@ import { cn } from '@/lib/utils'
 export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeData>) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // Debug: verificar os dados que chegam
+  console.log('DisplayNode data:', data)
+
   useEffect(() => {
+    console.log('DisplayNode useEffect triggered. imageData:', data.imageData)
+
     if (!data.imageData || !canvasRef.current) return
 
     const canvas = canvasRef.current
@@ -15,6 +20,8 @@ export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeDat
     if (!ctx) return
 
     const { width, height, data: pixels } = data.imageData
+
+    console.log('Rendering image:', { width, height, pixelsLength: pixels.length })
 
     canvas.width = width
     canvas.height = height
@@ -30,6 +37,7 @@ export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeDat
     }
 
     ctx.putImageData(imageData, 0, 0)
+    console.log('Image rendered successfully')
   }, [data.imageData])
 
   return (
@@ -73,6 +81,12 @@ export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeDat
           </div>
         )}
       </div>
+
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!bg-purple-500 !border-purple-600"
+      />
     </div>
   )
 }

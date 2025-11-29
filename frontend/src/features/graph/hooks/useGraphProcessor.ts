@@ -23,15 +23,32 @@ export function useGraphProcessor(
 
       const results = response.results
 
+      // Debug: verificar o que está chegando
+      console.log('Results from backend:', results)
+
       setNodes((nds) =>
         nds.map((node) => {
           const result = results[node.id]
           if (!result) return node
 
-          if (node.type === 'DISPLAY' && result.type === 'display' && result.image) {
+          // Debug: verificar cada nó DISPLAY
+          if (node.type === 'DISPLAY') {
+            console.log('DISPLAY Node:', node.id, 'Result:', result)
+          }
+
+          if (node.type === 'DISPLAY' && result.type === 'image' && result.width && result.height && result.data) {
+            const imageData = {
+              width: result.width,
+              height: result.height,
+              data: result.data
+            }
+            console.log('Setting imageData for DISPLAY:', imageData)
             return {
               ...node,
-              data: { ...node.data, imageData: result.image },
+              data: {
+                ...node.data,
+                imageData
+              },
             }
           }
 
