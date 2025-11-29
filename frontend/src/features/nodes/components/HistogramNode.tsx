@@ -1,11 +1,12 @@
 import { Handle, Position, type NodeProps } from 'reactflow'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import type { HistogramNodeData } from '@/types'
 import { cn } from '@/lib/utils'
 
 export default function HistogramNode({ data, selected }: NodeProps<HistogramNodeData>) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; value: number; index: number } | null>(null)
 
   useEffect(() => {
     if (!data.histogram || !canvasRef.current) return
@@ -15,7 +16,8 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
     if (!ctx) return
 
     const width = 256
-    const height = 120
+    const height = 150
+    const graphHeight = 110 // Altura para o gráfico, deixando espaço para labels
 
     canvas.width = width
     canvas.height = height
@@ -30,7 +32,7 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
     // Grid horizontal ANTES das barras
     ctx.strokeStyle = isDark ? '#334155' : '#e2e8f0'  // slate-700 / slate-200
     ctx.lineWidth = 1
-    for (let i = 30; i < height; i += 30) {
+    for (let i = 25; i < graphHeight; i += 25) {
       ctx.beginPath()
       ctx.moveTo(0, i)
       ctx.lineTo(width, i)
@@ -40,43 +42,134 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
     // Encontrar máximo para normalização
     const maxCount = Math.max(...data.histogram, 1)
 
-    // Desenhar barras com cor rosa/pink vibrante
-    ctx.fillStyle = isDark ? '#f472b6' : '#ec4899'  // pink-400 / pink-500
+    // Desenhar área preenchida ao invés de barras
+    ctx.beginPath()
+    ctx.moveTo(0, graphHeight)
+
     for (let i = 0; i < 256; i++) {
-      const barHeight = (data.histogram[i] / maxCount) * (height - 10)
-      if (barHeight > 0) {
-        ctx.fillRect(i, height - barHeight, 1, barHeight)
-      }
+      const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 5)
+      ctx.lineTo(i, graphHeight - barHeight)
     }
+
+    ctx.lineTo(255, graphHeight)
+    ctx.closePath()
+
+    // Preencher área com cor cinza
+    ctx.fillStyle = isDark ? '#64748b' : '#94a3b8'  // slate-500 / slate-400
+    ctx.fill()
+
+    // Adicionar contorno na parte superior
+    ctx.strokeStyle = isDark ? '#475569' : '#64748b'  // slate-600 / slate-500
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(0, graphHeight)
+    for (let i = 0; i < 256; i++) {
+      const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 5)
+      ctx.lineTo(i, graphHeight - barHeight)
+    }
+    ctx.stroke()
+
+    // Adicionar labels no eixo X
+    ctx.fillStyle = isDark ? '#94a3b8' : '#64748b'  // slate-400 / slate-500
+    ctx.font = '9px sans-serif'
+    ctx.textAlign = 'center'
+
+    const labels = [
+      { text: 'muito\nescuro', x: 25 },
+      { text: 'escuro', x: 75 },
+      { text: 'médio', x: 130 },
+      { text: 'claro', x: 185 },
+      { text: 'muito\nclaro', x: 235 }
+    ]
+
+    labels.forEach(label => {
+      const lines = label.text.split('\n')
+      lines.forEach((line, i) => {
+        ctx.fillText(line, label.x, graphHeight + 15 + (i * 10))
+      })
+    })
+
+    // Adicionar linhas divisórias no eixo X
+    ctx.strokeStyle = isDark ? '#334155' : '#e2e8f0'
+    ctx.lineWidth = 1
+    const divisions = [0, 51, 102, 153, 204, 255]
+    divisions.forEach(x => {
+      ctx.beginPath()
+      ctx.moveTo(x, graphHeight)
+      ctx.lineTo(x, graphHeight + 5)
+      ctx.stroke()
+    })
   }, [data.histogram])
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !data.histogram) return
+
+    const rect = canvasRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    // Converter posição do mouse para índice do histograma
+    const index = Math.floor(x)
+
+    if (index >= 0 && index < 256) {
+      setTooltip({
+        x: e.clientX,
+        y: e.clientY,
+        value: data.histogram[index],
+        index
+      })
+    }
+  }
+
+  const handleMouseLeave = () => {
+    setTooltip(null)
+  }
+
   return (
-    <div
-      className={cn(
-        'rounded-lg border-2 bg-card p-3 shadow-lg min-w-[270px]',
-        selected ? 'border-primary' : 'border-pink-500'
-      )}
-    >
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!bg-pink-500 !border-pink-600"
-      />
-
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
-        <BarChart3 className="w-4 h-4 text-pink-500" />
-        <h3 className="font-bold text-sm text-pink-500">Histograma</h3>
-      </div>
-
-      <div className="space-y-2">
-        <canvas
-          ref={canvasRef}
-          className="w-full border border-border rounded"
+    <>
+      <div
+        className={cn(
+          'rounded-lg border-2 bg-card p-3 shadow-lg min-w-[270px]',
+          selected ? 'border-primary' : 'border-pink-500'
+        )}
+      >
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!bg-pink-500 !border-pink-600"
         />
-        <div className="text-xs text-muted-foreground text-center">
-          Distribuição de intensidades (0-255)
+
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+          <BarChart3 className="w-4 h-4 text-pink-500" />
+          <h3 className="font-bold text-sm text-pink-500">Histograma</h3>
+        </div>
+
+        <div className="space-y-2">
+          <canvas
+            ref={canvasRef}
+            className="w-full border border-border rounded cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          />
+          <div className="text-xs text-muted-foreground text-center">
+            Distribuição de intensidades (0-255)
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          className="fixed pointer-events-none z-50 px-2 py-1 text-xs rounded shadow-lg bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900"
+          style={{
+            left: `${tooltip.x + 10}px`,
+            top: `${tooltip.y - 30}px`,
+          }}
+        >
+          <div className="font-semibold">{tooltip.value.toLocaleString('pt-BR')} pixels</div>
+          <div className="text-[10px] opacity-80">intensidade: {tooltip.index}</div>
+        </div>
+      )}
+    </>
   )
 }
