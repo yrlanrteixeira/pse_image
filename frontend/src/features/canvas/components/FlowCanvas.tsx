@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
 import ReactFlow, {
   MiniMap,
   Controls,
   Background,
+  ReactFlowProvider,
+  useReactFlow,
   type OnNodesChange,
   type OnEdgesChange,
   type OnConnect,
@@ -21,15 +24,60 @@ interface FlowCanvasProps {
   onConnect: OnConnect
 }
 
-export function FlowCanvas({
+interface KeyboardHandlerProps {
+  onLockChange: (locked: boolean) => void
+}
+
+function KeyboardHandler({ onLockChange }: KeyboardHandlerProps) {
+  const { zoomIn, zoomOut } = useReactFlow()
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Atalho para zoom in: tecla "+" ou "="
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault()
+        zoomIn()
+      }
+
+      // Atalho para zoom out: tecla "-" ou "_"
+      if (event.key === '-' || event.key === '_') {
+        event.preventDefault()
+        zoomOut()
+      }
+
+      // Atalho para alternar cadeado: tecla "Alt"
+      if (event.key === 'Alt') {
+        event.preventDefault()
+        onLockChange(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [zoomIn, zoomOut, onLockChange])
+
+  return null
+}
+
+function FlowCanvasInner({
   nodes,
   edges,
   onNodesChange,
   onEdgesChange,
   onConnect,
 }: FlowCanvasProps) {
+  const [isLocked, setIsLocked] = useState(false)
+
+  const handleLockToggle = () => {
+    setIsLocked((prev) => !prev)
+  }
+
   return (
     <div className="flex-1">
+      <KeyboardHandler onLockChange={handleLockToggle} />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -37,6 +85,9 @@ export function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        nodesDraggable={!isLocked}
+        nodesConnectable={!isLocked}
+        elementsSelectable={!isLocked}
         deleteKeyCode={['Delete', 'Backspace']}
         fitView
         defaultEdgeOptions={{
@@ -55,5 +106,13 @@ export function FlowCanvas({
         <Background variant="dots" gap={16} size={1} />
       </ReactFlow>
     </div>
+  )
+}
+
+export function FlowCanvas(props: FlowCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <FlowCanvasInner {...props} />
+    </ReactFlowProvider>
   )
 }
