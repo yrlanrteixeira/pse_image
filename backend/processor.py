@@ -3,10 +3,7 @@ from typing import List, Dict, Any, Optional
 from collections import deque
 
 class ImageProcessor:
-    """
-    Processador de imagens que implementa operações matemáticas manualmente
-    (sem usar métodos prontos como cv2.filter2D)
-    """
+
 
     def process_graph(self, nodes: List[Dict], edges: List[Dict]) -> Dict[str, Any]:
         """
@@ -118,7 +115,7 @@ class ImageProcessor:
 
     def process_convolution(self, node: Dict, inputs: List) -> Dict:
         """
-        Aplica convolução MANUAL (sem métodos prontos) ou filtro de mediana
+        Processa a convolução de uma imagem
         """
         if not inputs or 'data' not in inputs[0]:
             return {"error": "Entrada inválida para convolução"}
@@ -201,7 +198,7 @@ class ImageProcessor:
     
     def process_median(self, pixels: List[int], width: int, height: int, window_size: int) -> Dict:
         """
-        Aplica filtro de mediana MANUAL (sem métodos prontos)
+        Processa o filtro de mediana de uma imagem
         Coleta pixels da janela, ordena manualmente e pega o valor central
         """
         output = [0] * (width * height)
@@ -242,7 +239,7 @@ class ImageProcessor:
 
     def process_point_operation(self, node: Dict, inputs: List) -> Dict:
         """
-        Processa operações pontuais (brilho, contraste, limiarização)
+        Processa operações pontuais (brilho, limiarização)
         """
         if not inputs or 'data' not in inputs[0]:
             return {"error": "Entrada inválida para operação pontual"}
@@ -262,19 +259,13 @@ class ImageProcessor:
             for i in range(len(pixels)):
                 output[i] = max(0, min(255, pixels[i] + brightness))
 
-        # elif operation == 'contrast':
-        #     contrast = params.get('value', 1.0)
-        #     for i in range(len(pixels)):
-        #         output[i] = max(0, min(255, int((pixels[i] - 128) * contrast + 128)))
 
         elif operation == 'threshold':
             threshold = params.get('value', 128)
             for i in range(len(pixels)):
                 output[i] = 255 if pixels[i] >= threshold else 0
 
-        # elif operation == 'negative':
-        #     for i in range(len(pixels)):
-        #         output[i] = 255 - pixels[i]
+        
 
         return {
             "type": "image",

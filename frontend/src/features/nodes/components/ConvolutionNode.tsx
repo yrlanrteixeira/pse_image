@@ -78,15 +78,18 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
   }
 
   const handleKernelChange = (row: number, col: number, value: string) => {
+    // Permitir campo vazio - converter para 0 apenas se não for vazio
+    const numValue = value === '' ? 0 : (isNaN(parseFloat(value)) ? 0 : parseFloat(value))
     const newKernel = kernel.map((r, i) =>
-      r.map((c, j) => (i === row && j === col ? parseFloat(value) || 0 : c))
+      r.map((c, j) => (i === row && j === col ? numValue : c))
     )
     setKernel(newKernel)
     data.onChange?.(id, { ...data, kernel: newKernel })
   }
 
   const handleDivisorChange = (value: string) => {
-    const newDivisor = parseFloat(value) || 1
+    // Permitir campo vazio - converter para 1 apenas se não for vazio
+    const newDivisor = value === '' ? 1 : (isNaN(parseFloat(value)) ? 1 : parseFloat(value))
     setDivisor(newDivisor)
     data.onChange?.(id, { ...data, divisor: newDivisor })
   }
@@ -165,10 +168,11 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
                     <Input
                       key={`${i}-${j}`}
                       type="number"
-                      value={val}
+                      value={val || ''}
                       onChange={(e) => handleKernelChange(i, j, e.target.value)}
                       className="h-7 text-xs text-center p-0"
                       step="0.1"
+                      placeholder="0"
                     />
                   ))
                 )}
@@ -182,9 +186,10 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
               <Input
                 id={`divisor-${id}`}
                 type="number"
-                value={divisor}
+                value={divisor || ''}
                 onChange={(e) => handleDivisorChange(e.target.value)}
                 className="h-8 text-xs"
+                placeholder="1"
                 step="0.1"
               />
             </div>
