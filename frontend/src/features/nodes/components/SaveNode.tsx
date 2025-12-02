@@ -4,11 +4,21 @@ import { Save, Download } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { useDialog } from '@/hooks/useDialog'
 import type { SaveNodeData } from '@/types'
 import { cn } from '@/lib/utils'
 
 export default function SaveNode({ data, id, selected }: NodeProps<SaveNodeData>) {
   const [filename, setFilename] = useState(data.filename || 'output.raw')
+  const { dialog, showDialog, closeDialog } = useDialog()
 
   const handleFilenameChange = (newFilename: string) => {
     setFilename(newFilename)
@@ -17,7 +27,10 @@ export default function SaveNode({ data, id, selected }: NodeProps<SaveNodeData>
 
   const handleSave = () => {
     if (!data.imageData) {
-      alert('Nenhuma imagem para salvar! Execute o processamento primeiro.')
+      showDialog(
+        'Nenhuma imagem para salvar',
+        'Execute o processamento primeiro para gerar uma imagem.'
+      )
       return
     }
 
@@ -88,6 +101,18 @@ export default function SaveNode({ data, id, selected }: NodeProps<SaveNodeData>
           </div>
         )}
       </div>
+
+      <Dialog open={dialog.isOpen} onOpenChange={closeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialog.title}</DialogTitle>
+            <DialogDescription>{dialog.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={closeDialog}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

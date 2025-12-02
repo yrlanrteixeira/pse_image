@@ -63,7 +63,7 @@ async def upload_raw_file(file: UploadFile = File(...), width: int = 0, height: 
         file_ext = filename.lower().split('.')[-1] if '.' in filename else ""
         
         # Formatos de imagem comuns que o Pillow pode processar
-        common_formats = ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'gif', 'webp']
+        common_formats = ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'gif', 'webp, txt']
         
         if file_ext in common_formats:
             # Processar formato de imagem comum

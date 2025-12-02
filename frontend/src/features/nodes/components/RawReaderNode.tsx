@@ -4,6 +4,15 @@ import { Upload, FileText, Image as ImageIcon } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { useDialog } from '@/hooks/useDialog'
 import type { RawReaderNodeData } from '@/types'
 import { cn } from '@/lib/utils'
 import { uploadRawFile } from '@/lib/api'
@@ -12,6 +21,7 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
   const [width, setWidth] = useState(data.width || 512)
   const [height, setHeight] = useState(data.height || 512)
   const [loading, setLoading] = useState(false)
+  const { dialog, showDialog, closeDialog } = useDialog()
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -30,10 +40,9 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
 
         // Validar dimensões
         if (width * height !== imageData.length) {
-          alert(
-            `Dimensões inválidas!\n` +
-            `Esperado: ${width}×${height} = ${width * height} bytes\n` +
-            `Arquivo: ${imageData.length} bytes`
+          showDialog(
+            'Dimensões inválidas!',
+            `Esperado: ${width}×${height} = ${width * height} bytes\nArquivo: ${imageData.length} bytes`
           )
           return
         }
@@ -63,13 +72,16 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
           })
         } catch (error) {
           console.error('Erro ao converter imagem:', error)
-          alert(error instanceof Error ? error.message : 'Erro ao converter imagem')
+          showDialog(
+            'Erro ao converter imagem',
+            error instanceof Error ? error.message : 'Erro ao converter imagem'
+          )
           return
         }
       }
     } catch (error) {
       console.error('Erro ao ler arquivo:', error)
-      alert('Erro ao processar arquivo')
+      showDialog('Erro ao processar arquivo', 'Ocorreu um erro ao processar o arquivo selecionado.')
     } finally {
       setLoading(false)
     }
@@ -159,6 +171,18 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
           </div>
         )}
       </div>
+
+      <Dialog open={dialog.isOpen} onOpenChange={closeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialog.title}</DialogTitle>
+            <DialogDescription>{dialog.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={closeDialog}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

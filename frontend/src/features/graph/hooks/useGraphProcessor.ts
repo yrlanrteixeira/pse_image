@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import type { Node } from 'reactflow'
 import type { PSENode, PSEEdge, NodeDataTypes } from '@/types'
 import { processGraph } from '@/lib/api'
+import { useNotification } from '@/contexts/NotificationContext'
 
 export function useGraphProcessor(
   nodes: Node<NodeDataTypes>[],
@@ -9,6 +10,7 @@ export function useGraphProcessor(
   setNodes: (nodes: Node<NodeDataTypes>[] | ((nodes: Node<NodeDataTypes>[]) => Node<NodeDataTypes>[])) => void
 ) {
   const [isProcessing, setIsProcessing] = useState(false)
+  const { showDialog, showToast } = useNotification()
 
   const handleProcess = useCallback(async () => {
     setIsProcessing(true)
@@ -70,14 +72,17 @@ export function useGraphProcessor(
         })
       )
 
-      alert('✓ Processamento concluído com sucesso!')
+      showToast('Processamento concluído!', 'O grafo foi processado com sucesso.')
     } catch (error) {
       console.error('Erro ao processar:', error)
-      alert(`Erro ao processar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+      showDialog(
+        'Erro ao processar',
+        error instanceof Error ? error.message : 'Erro desconhecido ao processar o grafo.'
+      )
     } finally {
       setIsProcessing(false)
     }
-  }, [nodes, edges, setNodes])
+  }, [nodes, edges, setNodes, showDialog, showToast])
 
   return {
     isProcessing,
