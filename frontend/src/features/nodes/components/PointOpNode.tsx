@@ -29,14 +29,6 @@ const OPERATION_CONFIG: Record<PointOperation, {
     default: 0,
     description: 'Adiciona valor a cada pixel'
   },
-  contrast: {
-    label: 'Fator',
-    min: 0.1,
-    max: 3,
-    step: '0.1',
-    default: 1.0,
-    description: 'Multiplica desvio da média (128)'
-  },
   threshold: {
     label: 'Limiar',
     min: 0,
@@ -44,14 +36,6 @@ const OPERATION_CONFIG: Record<PointOperation, {
     step: '1',
     default: 128,
     description: 'Binariza: >= limiar → 255, < limiar → 0'
-  },
-  negative: {
-    label: '',
-    min: 0,
-    max: 0,
-    step: '1',
-    default: 0,
-    description: 'Inverte: pixel → 255 - pixel'
   },
 }
 
@@ -103,30 +87,26 @@ export default function PointOpNode({ data, id, selected }: NodeProps<PointOpNod
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="brightness" className="text-xs">Brilho</SelectItem>
-              <SelectItem value="contrast" className="text-xs">Contraste</SelectItem>
               <SelectItem value="threshold" className="text-xs">Limiarização</SelectItem>
-              <SelectItem value="negative" className="text-xs">Negativo</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {operation !== 'negative' && (
-          <div>
-            <Label htmlFor={`value-${id}`} className="text-xs text-muted-foreground">
-              {config.label}
-            </Label>
-            <Input
-              id={`value-${id}`}
-              type="number"
-              value={value}
-              onChange={(e) => handleValueChange(e.target.value)}
-              className="h-8 text-xs"
-              min={config.min}
-              max={config.max}
-              step={config.step}
-            />
-          </div>
-        )}
+        <div>
+          <Label htmlFor={`value-${id}`} className="text-xs text-muted-foreground">
+            {config.label}
+          </Label>
+          <Input
+            id={`value-${id}`}
+            type="number"
+            value={value}
+            onChange={(e) => handleValueChange(e.target.value)}
+            className="h-8 text-xs"
+            min={config.min}
+            max={config.max}
+            step={config.step}
+          />
+        </div>
 
         <div className="text-[10px] text-muted-foreground bg-secondary p-2 rounded">
           {config.description}

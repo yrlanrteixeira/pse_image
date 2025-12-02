@@ -31,15 +31,22 @@ export async function processGraph(
 
 export async function uploadRawFile(
   file: File,
-  width: number,
-  height: number
+  width?: number,
+  height?: number
 ): Promise<{ width: number; height: number; data: number[] }> {
   try {
     const formData = new FormData()
     formData.append('file', file)
 
+    // Construir URL com parâmetros opcionais
+    const params = new URLSearchParams()
+    if (width !== undefined) params.append('width', width.toString())
+    if (height !== undefined) params.append('height', height.toString())
+
+    const queryString = params.toString() ? `?${params.toString()}` : ''
+
     const response = await api.post(
-      `/upload-raw?width=${width}&height=${height}`,
+      `/upload-raw${queryString}`,
       formData,
       {
         headers: {

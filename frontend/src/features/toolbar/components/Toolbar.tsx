@@ -95,7 +95,7 @@ export function Toolbar({ onAddNode, onProcess, onClear, isProcessing }: Toolbar
 
         <Button onClick={onClear} size="sm" variant="destructive">
           <Trash2 className="w-4 h-4 mr-1" />
-          Limpar
+          Limpar tudo
         </Button>
 
         <ThemeToggle />

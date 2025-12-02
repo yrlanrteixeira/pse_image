@@ -118,7 +118,7 @@ class ImageProcessor:
 
     def process_convolution(self, node: Dict, inputs: List) -> Dict:
         """
-        Aplica convolução MANUAL (sem métodos prontos)
+        Aplica convolução MANUAL (sem métodos prontos) ou filtro de mediana
         """
         if not inputs or 'data' not in inputs[0]:
             return {"error": "Entrada inválida para convolução"}
@@ -130,6 +130,13 @@ class ImageProcessor:
 
         params = node.get('data', {})
         kernel_size = params.get('kernelSize', 3)
+        filter_type = params.get('filterType', 'convolution')
+        
+        # Verificar se é filtro de mediana
+        if filter_type == 'median':
+            return self.process_median(pixels, width, height, kernel_size)
+        
+        # Convolução tradicional
         kernel = params.get('kernel', [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         divisor = params.get('divisor', 9)
 
@@ -170,6 +177,68 @@ class ImageProcessor:
             "height": height,
             "data": output
         }
+    
+    def insertion_sort(self, arr: List[int]) -> List[int]:
+        """
+        Implementação manual de insertion sort para ordenar pixels
+        (sem usar sorted() ou qualquer método pronto)
+        """
+        # Criar cópia do array
+        sorted_arr = arr[:]
+        
+        for i in range(1, len(sorted_arr)):
+            key = sorted_arr[i]
+            j = i - 1
+            
+            # Move elementos maiores que key uma posição à frente
+            while j >= 0 and sorted_arr[j] > key:
+                sorted_arr[j + 1] = sorted_arr[j]
+                j -= 1
+            
+            sorted_arr[j + 1] = key
+        
+        return sorted_arr
+    
+    def process_median(self, pixels: List[int], width: int, height: int, window_size: int) -> Dict:
+        """
+        Aplica filtro de mediana MANUAL (sem métodos prontos)
+        Coleta pixels da janela, ordena manualmente e pega o valor central
+        """
+        output = [0] * (width * height)
+        radius = (window_size - 1) // 2
+        
+        for y in range(height):
+            for x in range(width):
+                # Coletar pixels da janela
+                window_pixels = []
+                
+                for ky in range(-radius, radius + 1):
+                    yy = y + ky
+                    if yy < 0 or yy >= height:
+                        continue
+                    
+                    for kx in range(-radius, radius + 1):
+                        xx = x + kx
+                        if xx < 0 or xx >= width:
+                            continue
+                        
+                        window_pixels.append(pixels[yy * width + xx])
+                
+                # Ordenar manualmente os pixels
+                sorted_pixels = self.insertion_sort(window_pixels)
+                
+                # Pegar valor mediano (elemento central)
+                median_index = len(sorted_pixels) // 2
+                median_value = sorted_pixels[median_index]
+                
+                output[y * width + x] = median_value
+        
+        return {
+            "type": "image",
+            "width": width,
+            "height": height,
+            "data": output
+        }
 
     def process_point_operation(self, node: Dict, inputs: List) -> Dict:
         """
@@ -193,19 +262,19 @@ class ImageProcessor:
             for i in range(len(pixels)):
                 output[i] = max(0, min(255, pixels[i] + brightness))
 
-        elif operation == 'contrast':
-            contrast = params.get('value', 1.0)
-            for i in range(len(pixels)):
-                output[i] = max(0, min(255, int((pixels[i] - 128) * contrast + 128)))
+        # elif operation == 'contrast':
+        #     contrast = params.get('value', 1.0)
+        #     for i in range(len(pixels)):
+        #         output[i] = max(0, min(255, int((pixels[i] - 128) * contrast + 128)))
 
         elif operation == 'threshold':
             threshold = params.get('value', 128)
             for i in range(len(pixels)):
                 output[i] = 255 if pixels[i] >= threshold else 0
 
-        elif operation == 'negative':
-            for i in range(len(pixels)):
-                output[i] = 255 - pixels[i]
+        # elif operation == 'negative':
+        #     for i in range(len(pixels)):
+        #         output[i] = 255 - pixels[i]
 
         return {
             "type": "image",
@@ -264,15 +333,23 @@ class ImageProcessor:
 
     def process_display(self, node: Dict, inputs: List) -> Dict:
         """
-        Prepara imagem para exibição
+        Prepara imagem para exibição e propaga dados para outros nós
         """
         if not inputs:
             return {"error": "Nenhuma entrada para exibir"}
 
-        return {
-            "type": "display",
-            "image": inputs[0]
+        # Retorna os dados da imagem no formato padrão para permitir encadeamento
+        result = {
+            "type": "image",
+            "width": inputs[0]['width'],
+            "height": inputs[0]['height'],
+            "data": inputs[0]['data']
         }
+        
+        # Debug: verificar o que está sendo retornado
+        print(f"[DEBUG] process_display retornando: type={result['type']}, width={result['width']}, height={result['height']}, data_length={len(result['data'])}")
+        
+        return result
 
     def process_save(self, node: Dict, inputs: List) -> Dict:
         """
