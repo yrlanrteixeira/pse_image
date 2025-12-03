@@ -34,9 +34,23 @@ export default function SaveNode({ data, id, selected }: NodeProps<SaveNodeData>
       return
     }
 
-    const { data: pixels } = data.imageData
-    const uint8Array = new Uint8Array(pixels)
-    const blob = new Blob([uint8Array], { type: 'application/octet-stream' })
+    const { width, height, data: pixels } = data.imageData
+
+    // Criar conteúdo em formato texto RAW (valores separados por espaços)
+    const lines: string[] = []
+    for (let y = 0; y < height; y++) {
+      const row: string[] = []
+      for (let x = 0; x < width; x++) {
+        const pixelIndex = y * width + x
+        if (pixelIndex < pixels.length) {
+          row.push(pixels[pixelIndex].toString())
+        }
+      }
+      lines.push(row.join(' '))
+    }
+
+    const textContent = lines.join('\n')
+    const blob = new Blob([textContent], { type: 'text/plain' })
 
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -44,6 +58,11 @@ export default function SaveNode({ data, id, selected }: NodeProps<SaveNodeData>
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
+
+    showDialog(
+      'Arquivo salvo!',
+      `Arquivo ${filename} salvo em formato RAW texto (${width}×${height} pixels).`
+    )
   }
 
   return (

@@ -344,13 +344,51 @@ class ImageProcessor:
 
     def process_save(self, node: Dict, inputs: List) -> Dict:
         """
-        Marca imagem para salvamento
+        Salva imagem em formato RAW texto
         """
         if not inputs:
             return {"error": "Nenhuma entrada para salvar"}
+        
+        image_data = inputs[0]
+        filename = node.get('data', {}).get('filename', 'output.raw')
+        width = image_data.get('width', 0)
+        height = image_data.get('height', 0)
+        pixels = image_data.get('data', [])
+        
+        # Salvar em formato texto RAW
+        try:
+            # Construir conteúdo em formato texto
+            lines = []
+            for y in range(height):
+                row = []
+                for x in range(width):
+                    pixel_index = y * width + x
+                    if pixel_index < len(pixels):
+                        row.append(str(pixels[pixel_index]))
+                lines.append(' '.join(row))
+            
+            content = '\n'.join(lines)
+            
+            # Salvar arquivo
+            import os
+            save_path = os.path.join('backend', 'output', filename)
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            
+            with open(save_path, 'w') as f:
+                f.write(content)
+            
+            return {
+                "type": "save",
+                "filename": filename,
+                "path": save_path,
+                "width": width,
+                "height": height,
+                "saved": True,
+                "message": f"Arquivo salvo em {save_path}"
+            }
+        except Exception as e:
+            return {
+                "type": "save",
+                "error": f"Erro ao salvar arquivo: {str(e)}"
+            }
 
-        return {
-            "type": "save",
-            "filename": node.get('data', {}).get('filename', 'output.raw'),
-            "image": inputs[0]
-        }
