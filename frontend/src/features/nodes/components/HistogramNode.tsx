@@ -16,8 +16,9 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
     if (!ctx) return
 
     const width = 256
-    const height = 150
-    const graphHeight = 110 // Altura para o gráfico, deixando espaço para labels
+    const height = 180
+    const graphHeight = 140 // Altura para o gráfico, deixando espaço para labels
+    const padding = 2 // Padding nas bordas para melhor visualização
 
     canvas.width = width
     canvas.height = height
@@ -41,33 +42,59 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
 
     // Encontrar máximo para normalização
     const maxCount = Math.max(...data.histogram, 1)
+    const nonZeroCount = data.histogram.filter(v => v > 0).length
 
-    // Desenhar área preenchida ao invés de barras
-    ctx.beginPath()
-    ctx.moveTo(0, graphHeight)
+    // Se houver poucos valores únicos, desenhar como barras grossas
+    const useBars = nonZeroCount <= 20
+    const barWidth = useBars ? Math.max(3, Math.floor(width / 100)) : 1
 
-    for (let i = 0; i < 256; i++) {
-      const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 5)
-      ctx.lineTo(i, graphHeight - barHeight)
+    if (useBars) {
+      // Desenhar como barras verticais grossas
+      for (let i = 0; i < 256; i++) {
+        if (data.histogram[i] > 0) {
+          const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 10)
+          const x = i
+          const y = graphHeight - barHeight
+
+          // Desenhar barra
+          ctx.fillStyle = isDark ? '#64748b' : '#94a3b8'
+          ctx.fillRect(x - barWidth / 2, y, barWidth, barHeight)
+
+          // Contorno da barra
+          ctx.strokeStyle = isDark ? '#475569' : '#64748b'
+          ctx.lineWidth = 1
+          ctx.strokeRect(x - barWidth / 2, y, barWidth, barHeight)
+        }
+      }
+    } else {
+      // Desenhar como área preenchida (código original)
+      // Desenhar como área preenchida (código original)
+      ctx.beginPath()
+      ctx.moveTo(0, graphHeight)
+
+      for (let i = 0; i < 256; i++) {
+        const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 10)
+        ctx.lineTo(i, graphHeight - barHeight)
+      }
+
+      ctx.lineTo(255, graphHeight)
+      ctx.closePath()
+
+      // Preencher área com cor cinza
+      ctx.fillStyle = isDark ? '#64748b' : '#94a3b8'  // slate-500 / slate-400
+      ctx.fill()
+
+      // Adicionar contorno na parte superior
+      ctx.strokeStyle = isDark ? '#475569' : '#64748b'  // slate-600 / slate-500
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(0, graphHeight)
+      for (let i = 0; i < 256; i++) {
+        const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 10)
+        ctx.lineTo(i, graphHeight - barHeight)
+      }
+      ctx.stroke()
     }
-
-    ctx.lineTo(255, graphHeight)
-    ctx.closePath()
-
-    // Preencher área com cor cinza
-    ctx.fillStyle = isDark ? '#64748b' : '#94a3b8'  // slate-500 / slate-400
-    ctx.fill()
-
-    // Adicionar contorno na parte superior
-    ctx.strokeStyle = isDark ? '#475569' : '#64748b'  // slate-600 / slate-500
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(0, graphHeight)
-    for (let i = 0; i < 256; i++) {
-      const barHeight = (data.histogram[i] / maxCount) * (graphHeight - 5)
-      ctx.lineTo(i, graphHeight - barHeight)
-    }
-    ctx.stroke()
 
     // Adicionar labels no eixo X
     ctx.fillStyle = isDark ? '#94a3b8' : '#64748b'  // slate-400 / slate-500
@@ -106,7 +133,6 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
 
     const rect = canvasRef.current.getBoundingClientRect()
     const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
 
     // Converter posição do mouse para índice do histograma
     const index = Math.floor(x)
