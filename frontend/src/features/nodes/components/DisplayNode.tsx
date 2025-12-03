@@ -1,11 +1,12 @@
 import { Handle, Position, type NodeProps } from 'reactflow'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Eye, ImageIcon } from 'lucide-react'
 import type { DisplayNodeData } from '@/types'
 import { cn } from '@/lib/utils'
 
 export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeData>) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 })
 
   // Debug: verificar os dados que chegam
   console.log('DisplayNode data:', data)
@@ -26,6 +27,25 @@ export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeDat
     canvas.width = width
     canvas.height = height
 
+    // Calcular dimensões de exibição mantendo aspect ratio
+    const maxSize = 200
+    const aspectRatio = width / height
+
+    let displayWidth: number
+    let displayHeight: number
+
+    if (width > height) {
+      // Imagem mais larga que alta
+      displayWidth = maxSize
+      displayHeight = maxSize / aspectRatio
+    } else {
+      // Imagem mais alta que larga (ou quadrada)
+      displayHeight = maxSize
+      displayWidth = maxSize * aspectRatio
+    }
+
+    setDisplaySize({ width: displayWidth, height: displayHeight })
+
     const imageData = ctx.createImageData(width, height)
 
     for (let i = 0; i < pixels.length; i++) {
@@ -37,7 +57,7 @@ export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeDat
     }
 
     ctx.putImageData(imageData, 0, 0)
-    console.log('Image rendered successfully')
+    console.log('Image rendered successfully with display size:', { displayWidth, displayHeight })
   }, [data.imageData])
 
   return (
@@ -63,10 +83,10 @@ export default function DisplayNode({ data, selected }: NodeProps<DisplayNodeDat
           <>
             <canvas
               ref={canvasRef}
-              className="w-full border border-border rounded bg-secondary"
+              className="border border-border rounded bg-secondary"
               style={{
-                maxWidth: '200px',
-                maxHeight: '200px',
+                width: `${displaySize.width}px`,
+                height: `${displaySize.height}px`,
                 imageRendering: 'pixelated',
               }}
             />

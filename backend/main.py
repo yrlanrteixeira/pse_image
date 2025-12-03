@@ -91,20 +91,86 @@ async def upload_raw_file(file: UploadFile = File(...), width: int = 0, height: 
                     detail=f"Erro ao processar imagem: {str(e)}"
                 )
         else:
-            # Processar como arquivo RAW (comportamento original)
+            # Processar como arquivo RAW
+            # Tentar primeiro como arquivo de texto (valores separados por espaços/quebras de linha)
+            is_text_format = False
+            try:
+                text_content = contents.decode('utf-8')
+                is_text_format = True
+                print(f"[DEBUG] Arquivo decodificado como texto, tamanho: {len(text_content)} caracteres")
+            except UnicodeDecodeError:
+                print(f"[DEBUG] Não é UTF-8, processando como RAW binário")
+                is_text_format = False
+            
+            if is_text_format:
+                try:
+                    # Parsear números do texto (separados por espaços, tabs, quebras de linha)
+                    pixel_values = []
+                    for line in text_content.split('\n'):
+                        line = line.strip()
+                        if line:  # Ignorar linhas vazias
+                            # Dividir por espaços e converter para inteiros
+                            values = [int(v.strip()) for v in line.split() if v.strip()]
+                            pixel_values.extend(values)
+                    
+                    print(f"[DEBUG] Valores parseados: {len(pixel_values)} pixels")
+                    
+                    # Se conseguiu parsear valores, usar como formato texto
+                    if len(pixel_values) > 0:
+                        # Para arquivos de texto, SEMPRE detectar dimensões automaticamente
+                        # Contar linhas não vazias e colunas na primeira linha
+                        lines = [l.strip() for l in text_content.split('\n') if l.strip()]
+                        detected_height = len(lines)
+                        detected_width = 0
+                        
+                        if detected_height > 0:
+                            first_line_values = [v for v in lines[0].split() if v.strip()]
+                            detected_width = len(first_line_values)
+                        
+                        print(f"[DEBUG] Dimensões detectadas: {detected_width}×{detected_height}")
+                        
+                        # Validar dimensões detectadas
+                        if detected_width <= 0 or detected_height <= 0:
+                            raise HTTPException(
+                                status_code=400,
+                                detail="Não foi possível detectar dimensões do arquivo de texto."
+                            )
+                        
+                        if detected_width * detected_height != len(pixel_values):
+                            print(f"[DEBUG] ERRO: Dimensões inconsistentes!")
+                            print(f"[DEBUG] Largura: {detected_width}, Altura: {detected_height}")
+                            print(f"[DEBUG] Esperado: {detected_width * detected_height}, Recebido: {len(pixel_values)}")
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Dimensões detectadas inconsistentes: {detected_width}×{detected_height} = {detected_width * detected_height} pixels, mas arquivo contém {len(pixel_values)} pixels"
+                            )
+                        
+                        print(f"[DEBUG] Retornando imagem {detected_width}×{detected_height}")
+                        return {
+                            "width": detected_width,
+                            "height": detected_height,
+                            "data": pixel_values
+                        }
+                except ValueError as e:
+                    # Se falhar ao parsear números, processar como RAW binário
+                    print(f"[DEBUG] Falha ao parsear valores como texto: {e}")
+                    print(f"[DEBUG] Tentando processar como RAW binário...")
+                    is_text_format = False
+            
+            # Processar como arquivo RAW binário (comportamento original)
             pixel_data = list(contents)
             
-            # Validar dimensões para RAW
+            # Validar dimensões para RAW binário
             if width <= 0 or height <= 0:
                 raise HTTPException(
                     status_code=400,
-                    detail="Para arquivos RAW, largura e altura devem ser especificadas"
+                    detail="Para arquivos RAW binários, largura e altura devem ser especificadas"
                 )
             
             if width * height != len(pixel_data):
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Dimensões inválidas: {width}x{height} != {len(pixel_data)} pixels"
+                    detail=f"Dimensões inválidas: {width}×{height} = {width * height} pixels, mas arquivo contém {len(pixel_data)} bytes"
                 )
 
             return {

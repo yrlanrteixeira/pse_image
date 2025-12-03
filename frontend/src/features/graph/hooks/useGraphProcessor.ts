@@ -16,6 +16,53 @@ export function useGraphProcessor(
     setIsProcessing(true)
 
     try {
+      // Validar nós RAW_READER antes de processar
+      const rawReaderNodes = nodes.filter(n => n.type === 'RAW_READER')
+      const errors: string[] = []
+
+      for (const node of rawReaderNodes) {
+        const { width, height, imageData } = node.data as any
+
+        // Validar largura
+        if (!width || width <= 0) {
+          errors.push(`Nó "${node.id}": largura inválida ou não definida`)
+        }
+
+        // Validar altura
+        if (!height || height <= 0) {
+          errors.push(`Nó "${node.id}": altura inválida ou não definida`)
+        }
+
+        // Validar se imageData existe
+        if (!imageData || !Array.isArray(imageData)) {
+          errors.push(`Nó "${node.id}": nenhuma imagem carregada`)
+        } else {
+          // Validar se imageData tem dados
+          if (imageData.length === 0) {
+            errors.push(`Nó "${node.id}": arquivo de imagem vazio`)
+          }
+
+          // Validar se dimensões correspondem ao tamanho do arquivo
+          if (width && height && width * height !== imageData.length) {
+            errors.push(
+              `Nó "${node.id}": dimensões não correspondem ao arquivo\n` +
+              `Esperado: ${width}×${height} = ${width * height} pixels\n` +
+              `Arquivo contém: ${imageData.length} pixels`
+            )
+          }
+        }
+      }
+
+      // Se houver erros, mostrar diálogo e interromper processamento
+      if (errors.length > 0) {
+        showDialog(
+          'Validação de Imagens',
+          'Por favor, corrija os seguintes problemas antes de processar:\n\n' + errors.join('\n\n')
+        )
+        setIsProcessing(false)
+        return
+      }
+
       // Converter para PSENode[] para a API
       const response = await processGraph(nodes as PSENode[], edges)
 

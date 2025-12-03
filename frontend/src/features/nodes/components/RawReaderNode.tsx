@@ -30,30 +30,33 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
     setLoading(true)
     try {
       const filename = file.name.toLowerCase()
-      const isRawFile = filename.endsWith('.raw')
+      const isRawOrTxtFile = filename.endsWith('.raw') || filename.endsWith('.txt')
 
-      if (isRawFile) {
-        // Arquivo RAW: processar localmente (comportamento original)
-        const arrayBuffer = await file.arrayBuffer()
-        const uint8Array = new Uint8Array(arrayBuffer)
-        const imageData = Array.from(uint8Array)
+      if (isRawOrTxtFile) {
+        // Arquivo RAW ou TXT: enviar ao backend para processamento
+        // O backend tentará ler como texto primeiro, depois como binário
+        try {
+          const result = await uploadRawFile(file, width, height)
 
-        // Validar dimensões
-        if (width * height !== imageData.length) {
+          // Backend retorna automaticamente as dimensões e dados
+          setWidth(result.width)
+          setHeight(result.height)
+
+          data.onChange?.(id, {
+            ...data,
+            imageData: result.data,
+            width: result.width,
+            height: result.height,
+            filename: file.name,
+          })
+        } catch (error) {
+          console.error('Erro ao processar arquivo:', error)
           showDialog(
-            'Dimensões inválidas!',
-            `Esperado: ${width}×${height} = ${width * height} bytes\nArquivo: ${imageData.length} bytes`
+            'Erro ao processar arquivo',
+            error instanceof Error ? error.message : 'Erro ao processar arquivo RAW/TXT'
           )
           return
         }
-
-        data.onChange?.(id, {
-          ...data,
-          imageData,
-          width,
-          height,
-          filename: file.name,
-        })
       } else {
         // Formato de imagem comum: enviar ao backend para conversão
         try {
@@ -148,13 +151,13 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
           <Input
             id={`file-${id}`}
             type="file"
-            accept=".raw,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.gif,.webp"
+            accept=".raw,.txt,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.gif,.webp"
             onChange={handleFileChange}
             className="h-8 text-xs cursor-pointer"
             disabled={loading}
           />
           <p className="text-[10px] text-muted-foreground mt-1">
-            RAW, JPG, PNG, BMP, TIFF, GIF, WebP
+            RAW (texto/binário), TXT, JPG, PNG, BMP, TIFF, GIF, WebP
           </p>
         </div>
 
