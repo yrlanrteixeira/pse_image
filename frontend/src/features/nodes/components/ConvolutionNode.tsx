@@ -43,13 +43,12 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
     setDivisor(kernelData.divisor)
 
     data.onChange?.(id, {
-      ...data,
       preset: presetKey,
       kernelSize: kernelSize,
       kernel: kernelData.kernel,
       divisor: kernelData.divisor,
       filterType: newFilterType,
-    })
+    } as Partial<ConvolutionNodeData>)
   }
 
   const handleKernelSizeChange = (size: string) => {
@@ -70,11 +69,10 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
     setDivisor(kernelData.divisor)
 
     data.onChange?.(id, {
-      ...data,
       kernelSize: newSize,
       kernel: kernelData.kernel,
       divisor: kernelData.divisor,
-    })
+    } as Partial<ConvolutionNodeData>)
   }
 
   const handleKernelChange = (row: number, col: number, value: string) => {
@@ -84,14 +82,14 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
       r.map((c, j) => (i === row && j === col ? numValue : c))
     )
     setKernel(newKernel)
-    data.onChange?.(id, { ...data, kernel: newKernel })
+    data.onChange?.(id, { kernel: newKernel } as Partial<ConvolutionNodeData>)
   }
 
   const handleDivisorChange = (value: string) => {
     // Permitir campo vazio - converter para 1 apenas se não for vazio
     const newDivisor = value === '' ? 1 : (isNaN(parseFloat(value)) ? 1 : parseFloat(value))
     setDivisor(newDivisor)
-    data.onChange?.(id, { ...data, divisor: newDivisor })
+    data.onChange?.(id, { divisor: newDivisor } as Partial<ConvolutionNodeData>)
   }
 
   const isMedianFilter = filterType === 'median'

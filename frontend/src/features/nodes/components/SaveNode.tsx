@@ -22,7 +22,7 @@ export default function SaveNode({ data, id, selected }: NodeProps<SaveNodeData>
 
   const handleFilenameChange = (newFilename: string) => {
     setFilename(newFilename)
-    data.onChange?.(id, { ...data, filename: newFilename })
+    data.onChange?.(id, { filename: newFilename } as Partial<SaveNodeData>)
   }
 
   const handleSave = () => {

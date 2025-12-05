@@ -18,7 +18,6 @@ export default function HistogramNode({ data, selected }: NodeProps<HistogramNod
     const width = 256
     const height = 180
     const graphHeight = 140 // Altura para o gráfico, deixando espaço para labels
-    const padding = 2 // Padding nas bordas para melhor visualização
 
     canvas.width = width
     canvas.height = height

@@ -1,6 +1,6 @@
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useState } from 'react'
-import { Upload, FileText, Image as ImageIcon } from 'lucide-react'
+import { FileText, Image as ImageIcon } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -43,12 +43,11 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
           setHeight(result.height)
 
           data.onChange?.(id, {
-            ...data,
             imageData: result.data,
             width: result.width,
             height: result.height,
             filename: file.name,
-          })
+          } as Partial<RawReaderNodeData>)
         } catch (error) {
           console.error('Erro ao processar arquivo:', error)
           showDialog(
@@ -67,12 +66,11 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
           setHeight(result.height)
 
           data.onChange?.(id, {
-            ...data,
             imageData: result.data,
             width: result.width,
             height: result.height,
             filename: file.name,
-          })
+          } as Partial<RawReaderNodeData>)
         } catch (error) {
           console.error('Erro ao converter imagem:', error)
           showDialog(
@@ -93,7 +91,7 @@ export default function RawReaderNode({ data, id, selected }: NodeProps<RawReade
   const handleDimensionChange = (newWidth: number, newHeight: number) => {
     setWidth(newWidth)
     setHeight(newHeight)
-    data.onChange?.(id, { ...data, width: newWidth, height: newHeight })
+    data.onChange?.(id, { width: newWidth, height: newHeight } as Partial<RawReaderNodeData>)
   }
 
   return (

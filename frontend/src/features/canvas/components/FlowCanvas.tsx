@@ -9,6 +9,7 @@ import ReactFlow, {
   type OnEdgesChange,
   type OnConnect,
   type Node,
+  BackgroundVariant,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -103,7 +104,7 @@ function FlowCanvasInner({
           pannable
           zoomable
         />
-        <Background variant="dots" gap={16} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
       </ReactFlow>
     </div>
   )

@@ -49,13 +49,13 @@ export default function PointOpNode({ data, id, selected }: NodeProps<PointOpNod
     setOperation(newOp)
     const newValue = OPERATION_CONFIG[newOp].default
     setValue(newValue)
-    data.onChange?.(id, { ...data, operation: newOp, value: newValue })
+    data.onChange?.(id, { operation: newOp, value: newValue } as Partial<PointOpNodeData>)
   }
 
   const handleValueChange = (newValue: string) => {
     const parsed = parseFloat(newValue)
     setValue(parsed)
-    data.onChange?.(id, { ...data, value: parsed })
+    data.onChange?.(id, { value: parsed } as Partial<PointOpNodeData>)
   }
 
   return (
