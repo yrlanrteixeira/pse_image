@@ -12,7 +12,7 @@ app = FastAPI(title="PSE-Image Backend", version="1.0.0")
 # Configurar CORS para permitir requisições do frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite e CRA
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://pseimage.yrttech.com", "https://pseimage.yrttech.com"],  # Vite e CRA
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
