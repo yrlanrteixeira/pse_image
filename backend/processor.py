@@ -8,28 +8,24 @@ class ImageProcessor:
     def process_graph(self, nodes: List[Dict], edges: List[Dict]) -> Dict[str, Any]:
         """
         Processa o grafo de nós executando em ordem topológica
+        Garante que dependências sejam processadas antes de seus dependentes
         """
-        # Converter listas para dicionários indexados por ID
         nodes_dict = {node['id']: node for node in nodes}
 
-        # Executar ordenação topológica
         try:
             sorted_node_ids = self.topological_sort(nodes_dict, edges)
         except Exception as e:
             return {"error": f"Erro na ordenação topológica: {str(e)}"}
 
-        # Armazenar resultados intermediários
+        # Cache de resultados: permite que nós acessem outputs de nós anteriores
         results = {}
 
-        # Processar cada nó em ordem
         for node_id in sorted_node_ids:
             node = nodes_dict[node_id]
             node_type = node['type']
 
-            # Obter inputs do nó (imagens de nós anteriores)
             inputs = self.get_node_inputs(node_id, edges, results)
 
-            # Processar baseado no tipo
             try:
                 if node_type == 'RAW_READER':
                     results[node_id] = self.process_raw_reader(node, inputs)
@@ -54,9 +50,9 @@ class ImageProcessor:
 
     def topological_sort(self, nodes: Dict[str, Any], edges: List[Dict]) -> List[str]:
         """
-        Algoritmo de Kahn para ordenação topológica
+        Algoritmo de Kahn: ordena nós de forma que dependências sejam processadas antes
         """
-        # Calcular grau de entrada de cada nó
+        # in_degree[node] = quantas arestas entram no nó (quantos dependem dele)
         in_degree = {node_id: 0 for node_id in nodes.keys()}
         adjacency = {node_id: [] for node_id in nodes.keys()}
 
@@ -66,7 +62,7 @@ class ImageProcessor:
             adjacency[source].append(target)
             in_degree[target] += 1
 
-        # Fila com nós sem dependências
+        # Inicia com nós que não dependem de ninguém (grau 0)
         queue = deque([node_id for node_id, degree in in_degree.items() if degree == 0])
         sorted_nodes = []
 
@@ -74,13 +70,13 @@ class ImageProcessor:
             current = queue.popleft()
             sorted_nodes.append(current)
 
-            # Reduzir grau de entrada dos vizinhos
+            # Remove dependência dos vizinhos
             for neighbor in adjacency[current]:
                 in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
+                if in_degree[neighbor] == 0:  # Vizinho ficou sem dependências
                     queue.append(neighbor)
 
-        # Verificar se há ciclos
+        # Se não processou todos os nós, existe ciclo
         if len(sorted_nodes) != len(nodes):
             raise Exception("Grafo contém ciclos")
 
@@ -124,47 +120,41 @@ class ImageProcessor:
         width = input_image['width']
         height = input_image['height']
         pixels = input_image['data']
-
+        
         params = node.get('data', {})
         kernel_size = params.get('kernelSize', 3)
         filter_type = params.get('filterType', 'convolution')
         
-        # Verificar se é filtro de mediana
         if filter_type == 'median':
             return self.process_median(pixels, width, height, kernel_size)
         
-        # Convolução tradicional
         kernel = params.get('kernel', [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         divisor = params.get('divisor', 9)
 
-        # Criar array de saída
         output = [0] * (width * height)
-        radius = (kernel_size - 1) // 2
+        radius = (kernel_size - 1) // 2  # Raio da janela do kernel
 
-        # Loop manual - convolução pixel por pixel
         for y in range(height):
             for x in range(width):
                 accumulator = 0
 
-                # Aplicar kernel
+                # Percorre a vizinhança do kernel centrado no pixel atual
                 for ky in range(-radius, radius + 1):
                     yy = y + ky
-                    if yy < 0 or yy >= height:
+                    if yy < 0 or yy >= height:  # Ignora pixels fora da imagem
                         continue
 
                     for kx in range(-radius, radius + 1):
                         xx = x + kx
-                        if xx < 0 or xx >= width:
+                        if xx < 0 or xx >= width:  # Ignora pixels fora da imagem
                             continue
 
-                        # Peso do kernel
+                        # Multiplica peso do kernel pelo valor do pixel
                         kernel_value = kernel[ky + radius][kx + radius]
-                        # Pixel da imagem
                         pixel_value = pixels[yy * width + xx]
-
                         accumulator += kernel_value * pixel_value
 
-                # Aplicar divisor e clamping
+                # Normaliza e limita resultado entre 0-255
                 result = int(accumulator / divisor) if divisor != 0 else 0
                 output[y * width + x] = max(0, min(255, result))
 
@@ -178,37 +168,37 @@ class ImageProcessor:
     def insertion_sort(self, arr: List[int]) -> List[int]:
         """
         Implementação manual de insertion sort para ordenar pixels
-        (sem usar sorted() ou qualquer método pronto)
+        Usado no filtro de mediana para evitar dependência de bibliotecas
         """
-        # Criar cópia do array
         sorted_arr = arr[:]
         
         for i in range(1, len(sorted_arr)):
             key = sorted_arr[i]
             j = i - 1
             
-            # Move elementos maiores que key uma posição à frente
+            # Desloca elementos maiores uma posição à direita
             while j >= 0 and sorted_arr[j] > key:
                 sorted_arr[j + 1] = sorted_arr[j]
                 j -= 1
             
+            # Insere o elemento na posição correta
             sorted_arr[j + 1] = key
         
         return sorted_arr
     
     def process_median(self, pixels: List[int], width: int, height: int, window_size: int) -> Dict:
         """
-        Processa o filtro de mediana de uma imagem
-        Coleta pixels da janela, ordena manualmente e pega o valor central
+        Filtro de mediana: substitui cada pixel pela mediana dos vizinhos
+        Útil para remover ruído tipo sal-e-pimenta preservando bordas
         """
         output = [0] * (width * height)
         radius = (window_size - 1) // 2
         
         for y in range(height):
             for x in range(width):
-                # Coletar pixels da janela
                 window_pixels = []
                 
+                # Coleta todos os pixels válidos dentro da janela
                 for ky in range(-radius, radius + 1):
                     yy = y + ky
                     if yy < 0 or yy >= height:
@@ -221,10 +211,9 @@ class ImageProcessor:
                         
                         window_pixels.append(pixels[yy * width + xx])
                 
-                # Ordenar manualmente os pixels
                 sorted_pixels = self.insertion_sort(window_pixels)
                 
-                # Pegar valor mediano (elemento central)
+                # Mediana é o elemento central da lista ordenada
                 median_index = len(sorted_pixels) // 2
                 median_value = sorted_pixels[median_index]
                 
@@ -239,7 +228,7 @@ class ImageProcessor:
 
     def process_point_operation(self, node: Dict, inputs: List) -> Dict:
         """
-        Processa operações pontuais (brilho, limiarização)
+        Operações pontuais: aplica transformação em cada pixel independentemente
         """
         if not inputs or 'data' not in inputs[0]:
             return {"error": "Entrada inválida para operação pontual"}
@@ -257,15 +246,12 @@ class ImageProcessor:
         if operation == 'brightness':
             brightness = params.get('value', 0)
             for i in range(len(pixels)):
-                output[i] = max(0, min(255, pixels[i] + brightness))
-
+                output[i] = max(0, min(255, pixels[i] + brightness))  # Clamp [0, 255]
 
         elif operation == 'threshold':
             threshold = params.get('value', 128)
             for i in range(len(pixels)):
-                output[i] = 255 if pixels[i] >= threshold else 0
-
-        
+                output[i] = 255 if pixels[i] >= threshold else 0  # Binarização
 
         return {
             "type": "image",
@@ -276,14 +262,14 @@ class ImageProcessor:
 
     def process_histogram(self, node: Dict, inputs: List) -> Dict:
         """
-        Calcula o histograma de uma imagem
+        Calcula histograma: frequência de cada intensidade (0-255)
         """
         if not inputs or 'data' not in inputs[0]:
             return {"error": "Entrada inválida para histograma"}
 
         pixels = inputs[0]['data']
 
-        # Calcular histograma (0-255)
+        # histogram[i] = quantidade de pixels com intensidade i
         histogram = [0] * 256
         for pixel in pixels:
             histogram[pixel] += 1
@@ -329,7 +315,7 @@ class ImageProcessor:
         if not inputs:
             return {"error": "Nenhuma entrada para exibir"}
 
-        # Retorna os dados da imagem no formato padrão para permitir encadeamento
+        # Propaga a imagem inalterada para permitir encadeamento (ex: Display -> Save)
         result = {
             "type": "image",
             "width": inputs[0]['width'],
@@ -337,7 +323,6 @@ class ImageProcessor:
             "data": inputs[0]['data']
         }
         
-        # Debug: verificar o que está sendo retornado
         print(f"[DEBUG] process_display retornando: type={result['type']}, width={result['width']}, height={result['height']}, data_length={len(result['data'])}")
         
         return result
@@ -355,9 +340,8 @@ class ImageProcessor:
         height = image_data.get('height', 0)
         pixels = image_data.get('data', [])
         
-        # Salvar em formato texto RAW
         try:
-            # Construir conteúdo em formato texto
+            # Monta conteúdo: cada linha da imagem vira uma linha no arquivo (valores separados por espaço)
             lines = []
             for y in range(height):
                 row = []
@@ -369,7 +353,6 @@ class ImageProcessor:
             
             content = '\n'.join(lines)
             
-            # Salvar arquivo
             import os
             save_path = os.path.join('backend', 'output', filename)
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
