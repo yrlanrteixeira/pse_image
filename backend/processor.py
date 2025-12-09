@@ -112,57 +112,64 @@ class ImageProcessor:
     def process_convolution(self, node: Dict, inputs: List) -> Dict:
         """
         Processa a convolução de uma imagem
+        Convolução = aplicar uma máscara/kernel sobre cada pixel
         """
+        # Valida se há entrada
         if not inputs or 'data' not in inputs[0]:
             return {"error": "Entrada inválida para convolução"}
 
+        # Extrai dados da imagem de entrada
         input_image = inputs[0]
         width = input_image['width']
         height = input_image['height']
-        pixels = input_image['data']
+        pixels = input_image['data']  # Lista de pixels [0-255]
         
+        # Obtém parâmetros do nó
         params = node.get('data', {})
-        kernel_size = params.get('kernelSize', 3)
-        filter_type = params.get('filterType', 'convolution')
+        kernel_size = params.get('kernelSize', 3)  # Tamanho da janela (3x3, 5x5, etc)
+        filter_type = params.get('filterType', 'convolution')  # Tipo de filtro
         
+        # Redireciona para filtros especializados
         if filter_type == 'mediana':
             return self.process_median(pixels, width, height, kernel_size)
         
         if filter_type == 'laplacian':
             return self.process_laplacian(pixels, width, height)
         
-        if filter_type == 'median':
+        if filter_type == 'media':
             return self.process_mean(pixels, width, height, kernel_size)
         
+        # Convolução genérica com kernel customizado
         kernel = params.get('kernel', [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-        divisor = params.get('divisor', 9)
+        divisor = params.get('divisor', 9)  # Normalização (soma dos pesos do kernel)
 
-        output = [0] * (width * height)
-        radius = (kernel_size - 1) // 2  # Raio da janela do kernel
+        output = [0] * (width * height)  # Imagem de saída
+        radius = (kernel_size - 1) // 2  # Raio da janela (ex: 3x3 tem raio 1)
 
+        # Percorre cada pixel da imagem
         for y in range(height):
             for x in range(width):
-                accumulator = 0
+                accumulator = 0  # Acumula resultado da convolução
 
-                # Percorre a vizinhança do kernel centrado no pixel atual
+                # Percorre a vizinhança do kernel centrado no pixel (x, y)
                 for ky in range(-radius, radius + 1):
-                    yy = y + ky
+                    yy = y + ky  # Posição Y do vizinho
                     if yy < 0 or yy >= height:  # Ignora pixels fora da imagem
                         continue
 
                     for kx in range(-radius, radius + 1):
-                        xx = x + kx
+                        xx = x + kx  # Posição X do vizinho
                         if xx < 0 or xx >= width:  # Ignora pixels fora da imagem
                             continue
 
                         # Multiplica peso do kernel pelo valor do pixel
-                        kernel_value = kernel[ky + radius][kx + radius]
-                        pixel_value = pixels[yy * width + xx]
-                        accumulator += kernel_value * pixel_value
+                        kernel_value = kernel[ky + radius][kx + radius]  # Peso da máscara
+                        pixel_value = pixels[yy * width + xx]  # Valor do pixel vizinho
+                        accumulator += kernel_value * pixel_value  # Soma ponderada
 
-                # Normaliza e limita resultado entre 0-255
+                # Normaliza dividindo pelo divisor e limita resultado entre 0-255
                 result = int(accumulator / divisor) if divisor != 0 else 0
-                output[y * width + x] = max(0, min(255, result))
+                output[y * width + x] = max(0, min(255, result))  # Clamp [0, 255]
 
         return {
             "type": "image",
@@ -174,17 +181,29 @@ class ImageProcessor:
     def insertion_sort(self, arr: List[int]) -> List[int]:
         """
         Implementação manual de insertion sort para ordenar pixels
-        Usado no filtro de mediana para evitar dependência de bibliotecas
-        """
-        sorted_arr = arr[:]
+        Usado no filtro de mediana
         
+        Como funciona:
+        1. Começa do segundo elemento
+        2. Compara com elementos anteriores
+        3. Desloca elementos maiores para a direita
+        4. Insere o elemento na posição correta
+        
+        Exemplo: [5, 2, 8, 1]
+        - i=1: [2, 5, 8, 1]  (2 vai para antes do 5)
+        - i=2: [2, 5, 8, 1]  (8 já está no lugar)
+        - i=3: [1, 2, 5, 8]  (1 vai para o início)
+        """
+        sorted_arr = arr[:]  # Cria uma cópia para não modificar o original
+        
+        # Percorre do segundo elemento até o final
         for i in range(1, len(sorted_arr)):
-            key = sorted_arr[i]
-            j = i - 1
+            key = sorted_arr[i]  # Elemento a ser inserido na posição correta
+            j = i - 1  # Índice do elemento anterior
             
             # Desloca elementos maiores uma posição à direita
             while j >= 0 and sorted_arr[j] > key:
-                sorted_arr[j + 1] = sorted_arr[j]
+                sorted_arr[j + 1] = sorted_arr[j]  # Move para direita
                 j -= 1
             
             # Insere o elemento na posição correta
@@ -194,35 +213,67 @@ class ImageProcessor:
     
     def process_median(self, pixels: List[int], width: int, height: int, window_size: int) -> Dict:
         """
-        Filtro de mediana: substitui cada pixel pela mediana dos vizinhos
-        Útil para remover ruído tipo sal-e-pimenta preservando bordas
-        """
-        output = [0] * (width * height)
-        radius = (window_size - 1) // 2
+        ═══════════════════════════════════════════════════════════════
+        FILTRO DE MEDIANA - Remove ruído sal-e-pimenta
+        ═══════════════════════════════════════════════════════════════
         
+        O QUE FAZ:
+        - Substitui cada pixel pela MEDIANA (valor do meio) dos vizinhos
+        - NÃO usa máscara/kernel (é um filtro não-linear)
+        
+        COMO FUNCIONA:
+        1. Para cada pixel, pega uma janela de vizinhos (ex: 3x3)
+        2. COLETA todos os valores dos pixels
+        3. ORDENA os valores
+        4. PEGA o valor do MEIO (mediana)
+        
+        EXEMPLO (janela 3x3):
+        Vizinhos: [10, 255, 30, 15, 50, 25, 30, 40, 20]
+                   ↓ ordena
+        Ordenado: [10, 15, 20, 25, 30, 30, 40, 50, 255]
+                                    ↑
+                              mediana = 30
+        
+        POR QUE É BOM:
+        - Remove ruído sal-e-pimenta (pixels muito claros/escuros isolados)
+        - PRESERVA BORDAS (não borra tanto quanto a média)
+        - O valor 255 (ruído) não afeta o resultado!
+        
+        DIFERENÇA DA MÉDIA:
+        - Média: soma tudo e divide (ruído afeta muito)
+        - Mediana: pega o do meio (ruído é ignorado)
+        ═══════════════════════════════════════════════════════════════
+        """
+        output = [0] * (width * height)  # Imagem de saída
+        radius = (window_size - 1) // 2  # Raio da janela (ex: 3x3 tem raio 1)
+        
+        # Percorre cada pixel da imagem
         for y in range(height):
             for x in range(width):
-                window_pixels = []
+                window_pixels = []  # Lista para coletar pixels da vizinhança
                 
-                # Coleta todos os pixels válidos dentro da janela
+                # PASSO 1: Coleta todos os pixels válidos dentro da janela
                 for ky in range(-radius, radius + 1):
-                    yy = y + ky
-                    if yy < 0 or yy >= height:
+                    yy = y + ky  # Posição Y do vizinho
+                    if yy < 0 or yy >= height:  # Ignora pixels fora da imagem
                         continue
                     
                     for kx in range(-radius, radius + 1):
-                        xx = x + kx
-                        if xx < 0 or xx >= width:
+                        xx = x + kx  # Posição X do vizinho
+                        if xx < 0 or xx >= width:  # Ignora pixels fora da imagem
                             continue
                         
+                        # Adiciona o pixel à lista
                         window_pixels.append(pixels[yy * width + xx])
                 
+                # PASSO 2: Ordena os pixels coletados
                 sorted_pixels = self.insertion_sort(window_pixels)
                 
-                # Mediana é o elemento central da lista ordenada
+                # PASSO 3: Pega o valor do meio (mediana)
                 median_index = len(sorted_pixels) // 2
                 median_value = sorted_pixels[median_index]
                 
+                # PASSO 4: Atribui a mediana ao pixel de saída
                 output[y * width + x] = median_value
         
         return {
@@ -234,46 +285,81 @@ class ImageProcessor:
     
     def process_laplacian(self, pixels: List[int], width: int, height: int) -> Dict:
         """
-        Filtro Laplaciano: detecta bordas usando operador de segunda derivada
-        Usa o kernel padrão:
-        [ 0, -1,  0]
-        [-1,  4, -1]
-        [ 0, -1,  0]
+        ═══════════════════════════════════════════════════════════════
+        FILTRO LAPLACIANO - Detecta bordas
+        ═══════════════════════════════════════════════════════════════
+        
+        O QUE FAZ:
+        - Detecta BORDAS (mudanças bruscas de intensidade)
+        - Usa operador de SEGUNDA DERIVADA
+        - USA máscara/kernel (é um filtro linear)
+        
+        KERNEL LAPLACIANO 3x3:
+        [ 0, -1,  0]     Significado:
+        [-1,  4, -1]  →  Centro = 4 (pixel atual)
+        [ 0, -1,  0]     Vizinhos = -1 (subtraem do centro)
+        
+        COMO FUNCIONA:
+        1. Multiplica cada vizinho pelo peso do kernel
+        2. Soma tudo: 4*centro - 1*cima - 1*baixo - 1*esquerda - 1*direita
+        3. Se houver mudança brusca → resultado ALTO
+        4. Se região uniforme → resultado próximo de ZERO
+        
+        EXEMPLO:
+        Região uniforme (todos 100):
+        [100, 100, 100]     Resultado:
+        [100, 100, 100]  →  4*100 - 100 - 100 - 100 - 100 = 0
+        [100, 100, 100]     (sem borda = 0)
+        
+        Borda (mudança de 100 para 200):
+        [100, 100, 100]     Resultado:
+        [100, 200, 100]  →  4*200 - 100 - 100 - 100 - 100 = 400
+        [100, 100, 100]     (borda detectada = alto)
+        
+        POR QUE É BOM:
+        - Detecta bordas em TODAS as direções
+        - Realça DETALHES e CONTORNOS
+        - Encontra mudanças RÁPIDAS de intensidade
+        
+        OBSERVAÇÃO:
+        - Pode gerar valores NEGATIVOS (usamos clamping para [0, 255])
+        - Sensível a RUÍDO (amplifica pequenas variações)
+        ═══════════════════════════════════════════════════════════════
         """
-        # Kernel Laplaciano 3x3
+        # Kernel Laplaciano 3x3 (máscara fixa)
         kernel = [
-            [ 0, -1,  0],
-            [-1,  4, -1],
-            [ 0, -1,  0]
+            [ 0, -1,  0],  # Linha superior
+            [-1,  4, -1],  # Linha do meio (centro = 4)
+            [ 0, -1,  0]   # Linha inferior
         ]
         
-        output = [0] * (width * height)
+        output = [0] * (width * height)  # Imagem de saída
         radius = 1  # Kernel 3x3 tem raio 1
         
+        # Percorre cada pixel da imagem
         for y in range(height):
             for x in range(width):
-                accumulator = 0
+                accumulator = 0  # Acumula resultado da convolução
                 
-                # Aplica o kernel Laplaciano
+                # Aplica o kernel Laplaciano na vizinhança
                 for ky in range(-radius, radius + 1):
-                    yy = y + ky
-                    if yy < 0 or yy >= height:
+                    yy = y + ky  # Posição Y do vizinho
+                    if yy < 0 or yy >= height:  # Ignora pixels fora da imagem
                         continue
                     
                     for kx in range(-radius, radius + 1):
-                        xx = x + kx
-                        if xx < 0 or xx >= width:
+                        xx = x + kx  # Posição X do vizinho
+                        if xx < 0 or xx >= width:  # Ignora pixels fora da imagem
                             continue
                         
-                        kernel_value = kernel[ky + radius][kx + radius]
-                        pixel_value = pixels[yy * width + xx]
-                        accumulator += kernel_value * pixel_value
+                        # Multiplica peso do kernel pelo valor do pixel
+                        kernel_value = kernel[ky + radius][kx + radius]  # Peso (-1, 0, ou 4)
+                        pixel_value = pixels[yy * width + xx]  # Valor do pixel
+                        accumulator += kernel_value * pixel_value  # Soma ponderada
                 
                 # O Laplaciano pode gerar valores negativos
-                # Opção 1: Clamping simples (0-255)
-                # Opção 2: Normalização com offset (128 + valor)
-                # Aqui usamos clamping para manter valores positivos
-                result = max(0, min(255, accumulator))
+                # Usamos clamping para manter valores no intervalo [0, 255]
+                result = max(0, min(255, accumulator))  # Clamp [0, 255]
                 output[y * width + x] = result
         
         return {
@@ -285,32 +371,76 @@ class ImageProcessor:
     
     def process_mean(self, pixels: List[int], width: int, height: int, window_size: int) -> Dict:
         """
-        Filtro de média (mean filter): substitui cada pixel pela média aritmética dos vizinhos
-        Útil para suavização e redução de ruído gaussiano
-        """
-        output = [0] * (width * height)
-        radius = (window_size - 1) // 2
+        ═══════════════════════════════════════════════════════════════
+        FILTRO DE MÉDIA - Suaviza a imagem (blur)
+        ═══════════════════════════════════════════════════════════════
         
+        O QUE FAZ:
+        - Substitui cada pixel pela MÉDIA ARITMÉTICA dos vizinhos
+        - PODE usar máscara/kernel (todos os pesos = 1)
+        
+        COMO FUNCIONA:
+        1. Para cada pixel, pega uma janela de vizinhos (ex: 3x3)
+        2. SOMA todos os valores
+        3. DIVIDE pelo número de pixels
+        4. Resultado = novo valor do pixel
+        
+        EXEMPLO (janela 3x3):
+        Vizinhos: [10, 20, 30, 15, 50, 25, 30, 40, 20]
+                   ↓ soma
+        Soma = 240
+                   ↓ divide por 9
+        Média = 240 / 9 = 26.6 ≈ 27
+        
+        KERNEL EQUIVALENTE (todos os pesos iguais):
+        [1, 1, 1]
+        [1, 1, 1]  ÷ 9  (divide pela soma dos pesos)
+        [1, 1, 1]
+        
+        POR QUE É BOM:
+        - SUAVIZA a imagem (efeito blur)
+        - Remove RUÍDO GAUSSIANO (ruído aleatório)
+        - Simples e rápido
+        
+        DESVANTAGENS:
+        - BORRA BORDAS (perde detalhes)
+        - Ruído pontual (sal-e-pimenta) AFETA muito o resultado
+        
+        DIFERENÇA DA MEDIANA:
+        - Média: todos os valores afetam igualmente (inclusive ruídos)
+        - Mediana: pega o do meio (ruídos extremos são ignorados)
+        
+        QUANDO USAR:
+        - Imagem com ruído gaussiano (aleatório)
+        - Quer suavizar/desfocar a imagem
+        - Não se importa em perder detalhes de bordas
+        ═══════════════════════════════════════════════════════════════
+        """
+        output = [0] * (width * height)  # Imagem de saída
+        radius = (window_size - 1) // 2  # Raio da janela (ex: 3x3 tem raio 1)
+        
+        # Percorre cada pixel da imagem
         for y in range(height):
             for x in range(width):
-                accumulator = 0
-                count = 0
+                accumulator = 0  # Acumula soma dos pixels
+                count = 0  # Conta quantos pixels foram somados
                 
-                # Soma todos os pixels válidos dentro da janela
+                # PASSO 1: Soma todos os pixels válidos dentro da janela
                 for ky in range(-radius, radius + 1):
-                    yy = y + ky
-                    if yy < 0 or yy >= height:
+                    yy = y + ky  # Posição Y do vizinho
+                    if yy < 0 or yy >= height:  # Ignora pixels fora da imagem
                         continue
                     
                     for kx in range(-radius, radius + 1):
-                        xx = x + kx
-                        if xx < 0 or xx >= width:
+                        xx = x + kx  # Posição X do vizinho
+                        if xx < 0 or xx >= width:  # Ignora pixels fora da imagem
                             continue
                         
+                        # Soma o valor do pixel
                         accumulator += pixels[yy * width + xx]
-                        count += 1
+                        count += 1  # Incrementa contador
                 
-                # Calcula a média
+                # PASSO 2: Calcula a média (soma / quantidade)
                 mean_value = accumulator // count if count > 0 else 0
                 output[y * width + x] = mean_value
         
