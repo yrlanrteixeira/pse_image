@@ -125,8 +125,14 @@ class ImageProcessor:
         kernel_size = params.get('kernelSize', 3)
         filter_type = params.get('filterType', 'convolution')
         
-        if filter_type == 'median':
+        if filter_type == 'mediana':
             return self.process_median(pixels, width, height, kernel_size)
+        
+        if filter_type == 'laplacian':
+            return self.process_laplacian(pixels, width, height)
+        
+        if filter_type == 'median':
+            return self.process_mean(pixels, width, height, kernel_size)
         
         kernel = params.get('kernel', [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         divisor = params.get('divisor', 9)
@@ -218,6 +224,95 @@ class ImageProcessor:
                 median_value = sorted_pixels[median_index]
                 
                 output[y * width + x] = median_value
+        
+        return {
+            "type": "image",
+            "width": width,
+            "height": height,
+            "data": output
+        }
+    
+    def process_laplacian(self, pixels: List[int], width: int, height: int) -> Dict:
+        """
+        Filtro Laplaciano: detecta bordas usando operador de segunda derivada
+        Usa o kernel padrão:
+        [ 0, -1,  0]
+        [-1,  4, -1]
+        [ 0, -1,  0]
+        """
+        # Kernel Laplaciano 3x3
+        kernel = [
+            [ 0, -1,  0],
+            [-1,  4, -1],
+            [ 0, -1,  0]
+        ]
+        
+        output = [0] * (width * height)
+        radius = 1  # Kernel 3x3 tem raio 1
+        
+        for y in range(height):
+            for x in range(width):
+                accumulator = 0
+                
+                # Aplica o kernel Laplaciano
+                for ky in range(-radius, radius + 1):
+                    yy = y + ky
+                    if yy < 0 or yy >= height:
+                        continue
+                    
+                    for kx in range(-radius, radius + 1):
+                        xx = x + kx
+                        if xx < 0 or xx >= width:
+                            continue
+                        
+                        kernel_value = kernel[ky + radius][kx + radius]
+                        pixel_value = pixels[yy * width + xx]
+                        accumulator += kernel_value * pixel_value
+                
+                # O Laplaciano pode gerar valores negativos
+                # Opção 1: Clamping simples (0-255)
+                # Opção 2: Normalização com offset (128 + valor)
+                # Aqui usamos clamping para manter valores positivos
+                result = max(0, min(255, accumulator))
+                output[y * width + x] = result
+        
+        return {
+            "type": "image",
+            "width": width,
+            "height": height,
+            "data": output
+        }
+    
+    def process_mean(self, pixels: List[int], width: int, height: int, window_size: int) -> Dict:
+        """
+        Filtro de média (mean filter): substitui cada pixel pela média aritmética dos vizinhos
+        Útil para suavização e redução de ruído gaussiano
+        """
+        output = [0] * (width * height)
+        radius = (window_size - 1) // 2
+        
+        for y in range(height):
+            for x in range(width):
+                accumulator = 0
+                count = 0
+                
+                # Soma todos os pixels válidos dentro da janela
+                for ky in range(-radius, radius + 1):
+                    yy = y + ky
+                    if yy < 0 or yy >= height:
+                        continue
+                    
+                    for kx in range(-radius, radius + 1):
+                        xx = x + kx
+                        if xx < 0 or xx >= width:
+                            continue
+                        
+                        accumulator += pixels[yy * width + xx]
+                        count += 1
+                
+                # Calcula a média
+                mean_value = accumulator // count if count > 0 else 0
+                output[y * width + x] = mean_value
         
         return {
             "type": "image",
