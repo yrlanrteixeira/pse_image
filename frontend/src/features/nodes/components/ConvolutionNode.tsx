@@ -20,7 +20,7 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
   const [preset, setPreset] = useState(data.preset || 'average')
   const [kernelSize, setKernelSize] = useState(data.kernelSize || 3)
   const [kernel, setKernel] = useState(data.kernel || PRESET_KERNELS.average.kernel)
-  const [divisor, setDivisor] = useState(data.divisor || 9)
+  const [divisor, setDivisor] = useState<number | string>(data.divisor || 9)
   const [filterType, setFilterType] = useState<'convolution' | 'median'>(data.filterType || 'convolution')
 
   const handlePresetChange = (presetKey: string) => {
@@ -88,10 +88,19 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
   }
 
   const handleDivisorChange = (value: string) => {
-    // Permitir campo vazio - converter para 1 apenas se não for vazio
-    const newDivisor = value === '' ? 1 : (isNaN(parseFloat(value)) ? 1 : parseFloat(value))
-    setDivisor(newDivisor)
-    data.onChange?.(id, { divisor: newDivisor } as Partial<ConvolutionNodeData>)
+    // Permitir campo vazio para que o usuário possa apagar e digitar novo valor
+    // Se vazio, usar 1 como padrão apenas no processamento
+    if (value === '') {
+      setDivisor('')
+      data.onChange?.(id, { divisor: 1 } as Partial<ConvolutionNodeData>)
+      return
+    }
+
+    const numValue = parseFloat(value)
+    if (!isNaN(numValue)) {
+      setDivisor(numValue)
+      data.onChange?.(id, { divisor: numValue } as Partial<ConvolutionNodeData>)
+    }
   }
 
   const isMedianFilter = filterType === 'median'
