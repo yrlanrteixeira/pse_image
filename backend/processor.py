@@ -276,11 +276,17 @@ class ImageProcessor:
                 # PASSO 4: Atribui a mediana ao pixel de saída
                 output[y * width + x] = median_value
         
+        # Cria a máscara/janela para visualização (todos os valores são 1)
+        # Representa a região de onde os pixels são coletados
+        mask = [[1 for _ in range(window_size)] for _ in range(window_size)]
+        
         return {
             "type": "image",
             "width": width,
             "height": height,
-            "data": output
+            "data": output,
+            "mask": mask,  # Máscara da janela usada
+            "maskSize": window_size  # Tamanho da janela (ex: 3, 5, 7)
         }
     
     def process_laplacian(self, pixels: List[int], width: int, height: int) -> Dict:
