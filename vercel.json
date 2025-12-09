@@ -1,9 +1,8 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "devCommand": "npm run dev",
+  "buildCommand": "npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
+  "devCommand": "npm --prefix frontend run dev",
   "framework": "vite",
-  "root": "frontend",
   "rewrites": [
     {
       "source": "/api/:path*",
