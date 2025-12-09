@@ -139,7 +139,7 @@ class ImageProcessor:
         if filter_type == 'media':
             return self.process_mean(pixels, width, height, kernel_size)
         
-        # Convolução genérica com kernel customizado
+        # Convolução com kernel customizado
         kernel = params.get('kernel', [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         divisor = params.get('divisor', 9)  # Normalização (soma dos pesos do kernel)
 
