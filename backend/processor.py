@@ -219,7 +219,6 @@ class ImageProcessor:
         
         O QUE FAZ:
         - Substitui cada pixel pela MEDIANA (valor do meio) dos vizinhos
-        - NÃO usa máscara/kernel (é um filtro não-linear)
         
         COMO FUNCIONA:
         1. Para cada pixel, pega uma janela de vizinhos (ex: 3x3)
