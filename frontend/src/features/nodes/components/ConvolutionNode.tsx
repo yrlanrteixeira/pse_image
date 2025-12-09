@@ -180,8 +180,6 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
                   className="h-7 text-xs text-center p-0"
                   step="0.1"
                   placeholder="0"
-                  disabled={isMedianFilter}
-                  readOnly={isMedianFilter}
                 />
               ))
             )}
