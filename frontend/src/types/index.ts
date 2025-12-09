@@ -171,7 +171,7 @@ export const PRESET_KERNELS: Record<string, KernelPreset> = {
   median: {
     name: 'Mediana',
     size: 3,
-    kernel: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], // Kernel não usado para mediana
+    kernel: [[1, 1, 1], [1, 1, 1], [1, 1, 1]], // Janela de coleta (todos os pixels)
     divisor: 1,
   },
   laplacian: {

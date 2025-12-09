@@ -35,8 +35,9 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
     } else if (presetKey === 'laplacian') {
       kernelData = generateLaplacianKernel(kernelSize)
     } else {
-      // median
-      kernelData = PRESET_KERNELS.median
+      // median - gera máscara de 1's para visualização
+      const medianMask = Array(kernelSize).fill(0).map(() => Array(kernelSize).fill(1))
+      kernelData = { kernel: medianMask, divisor: 1 }
     }
 
     setKernel(kernelData.kernel)
@@ -61,8 +62,9 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
     } else if (preset === 'laplacian') {
       kernelData = generateLaplacianKernel(newSize)
     } else {
-      // median - não precisa regenerar kernel
-      kernelData = { kernel: PRESET_KERNELS.median.kernel, divisor: 1 }
+      // median - gera máscara de 1's para visualização
+      const medianMask = Array(newSize).fill(0).map(() => Array(newSize).fill(1))
+      kernelData = { kernel: medianMask, divisor: 1 }
     }
 
     setKernel(kernelData.kernel)
@@ -149,54 +151,54 @@ export default function ConvolutionNode({ data, id, selected }: NodeProps<Convol
           </Select>
         </div>
 
-        {!isMedianFilter && (
-          <>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">
-                Kernel {kernelSize}×{kernelSize}
-              </Label>
-              <div
-                className="grid gap-1"
-                style={{
-                  gridTemplateColumns: `repeat(${kernelSize}, 1fr)`,
-                }}
-              >
-                {kernel.map((row, i) =>
-                  row.map((val, j) => (
-                    <Input
-                      key={`${i}-${j}`}
-                      type="number"
-                      value={val || ''}
-                      onChange={(e) => handleKernelChange(i, j, e.target.value)}
-                      className="h-7 text-xs text-center p-0"
-                      step="0.1"
-                      placeholder="0"
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">
+            {isMedianFilter ? `Janela ${kernelSize}×${kernelSize}` : `Kernel ${kernelSize}×${kernelSize}`}
+          </Label>
+          <div
+            className="grid gap-1"
+            style={{
+              gridTemplateColumns: `repeat(${kernelSize}, 1fr)`,
+            }}
+          >
+            {kernel.map((row, i) =>
+              row.map((val, j) => (
+                <Input
+                  key={`${i}-${j}`}
+                  type="number"
+                  value={val || ''}
+                  onChange={(e) => handleKernelChange(i, j, e.target.value)}
+                  className="h-7 text-xs text-center p-0"
+                  step="0.1"
+                  placeholder="0"
+                  disabled={isMedianFilter}
+                  readOnly={isMedianFilter}
+                />
+              ))
+            )}
+          </div>
+        </div>
 
-            <div>
-              <Label htmlFor={`divisor-${id}`} className="text-xs text-muted-foreground">
-                Divisor
-              </Label>
-              <Input
-                id={`divisor-${id}`}
-                type="number"
-                value={divisor || ''}
-                onChange={(e) => handleDivisorChange(e.target.value)}
-                className="h-8 text-xs"
-                placeholder="1"
-                step="0.1"
-              />
-            </div>
-          </>
+        {!isMedianFilter && (
+          <div>
+            <Label htmlFor={`divisor-${id}`} className="text-xs text-muted-foreground">
+              Divisor
+            </Label>
+            <Input
+              id={`divisor-${id}`}
+              type="number"
+              value={divisor || ''}
+              onChange={(e) => handleDivisorChange(e.target.value)}
+              className="h-8 text-xs"
+              placeholder="1"
+              step="0.1"
+            />
+          </div>
         )}
 
         {isMedianFilter && (
           <div className="text-[10px] text-muted-foreground bg-secondary p-2 rounded">
-            Filtro de mediana {kernelSize}×{kernelSize} (não usa kernel)
+            Filtro de mediana {kernelSize}×{kernelSize} - Coleta todos os pixels da janela
           </div>
         )}
 
