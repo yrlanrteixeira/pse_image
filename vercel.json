@@ -1,4 +1,12 @@
 {
-  "buildCommand": "cd frontend ; npm run build",
-  "outputDirectory": "frontend/dist"
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://localhost:3000/api/:path*"
+    }
+  ]
 }
